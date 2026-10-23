@@ -16,7 +16,7 @@
 - Break text, verbatim, four lines: `Look at something far away — at least 6 m (20 ft).` / `Stretch your arms and your back.` / `Sit up straight, shoulders back.` / `Slowly turn and tilt your head to stretch your neck.`
 - Break screen: solid black on all monitors incl. top bar; text light grey `#9a9a9a`, thin sans; countdown dimmer `#5a5a5a`. Nothing interactive.
 - Warning notice text: `Break in 10 s`. No buttons.
-- Pause and settings changes only in normal work interval (not warning, not break). After a pause ends or is cancelled, a full break must happen before another pause.
+- Pause and settings changes only in normal work interval (not warning, not break). At most one pause per local calendar day (cancelling still uses it); the day of the last pause survives restarts.
 - Call exemption off by default; detection = microphone capture or camera open.
 - No "AI look": native GNOME widgets, plain short labels, no emoji/gradients. No runtime dependencies beyond GNOME Shell.
 - Extension UUID `blackbreak@junkers4.github.io`; GSettings schema `org.gnome.shell.extensions.blackbreak`. License MIT.
@@ -65,10 +65,10 @@ linux/Makefile                                  test / pack / install
 - Produces (exported from `scheduler.js`):
   - `export const WORK_MS = 1_200_000, WARN_MS = 10_000, BREAK_MS = 30_000, FAILSAFE_MS = 35_000, MAX_PAUSE_MS = 10_800_000, IDLE_MS = 300_000, MAX_CALL_WAIT_MS = 10_800_000;`
   - `export const Phase = Object.freeze({WORK:'work', WARNING:'warning', BREAK:'break', PAUSED:'paused'});`
-  - `export class Scheduler { constructor(nowMs: number, scale: number = 1 /* all durations divided by scale; debug only */); update({now, idleMs = 0, inCall = false, inPhoneCall = false}): string /* Phase */; get phase(): string; get breakEndsAt(): number|null; get warningEndsAt(): number|null; get pauseEndsAt(): number|null; get canPause(): boolean; pause(durationMs: number, now: number): boolean; cancelPause(now: number): boolean; }`
-- Scenario format (`spec/scenarios.json`): `[{ "name": str, "req": ["REQ-00x"], "steps": [{ "t": seconds, "idle"?: seconds, "inCall"?: bool, "inPhoneCall"?: bool, "do"?: "pause:<seconds>" | "cancelPause" }], "expect": [{ "t": seconds, "phase": "work|warning|break|paused", "canPause"?: bool, "pauseResult"?: bool }] }]`. The runner creates `new Scheduler(0)`, walks t = 0…max in 1 s steps, applies the step input valid from its `t` until the next step (inputs persist), performs `do` at its `t` before `update`, and checks every `expect` at its `t` after `update`.
+  - `export class Scheduler { constructor(nowMs: number, {scale = 1 /* durations ÷ scale, debug only */, dayKey = localDayKey /* (ms) => 'YYYY-MM-DD' */, lastPauseDay = null}: object = {}); get lastPauseDay(): string|null; update({now, idleMs = 0, inCall = false, inPhoneCall = false}): string /* Phase */; get phase(): string; get breakEndsAt(): number|null; get warningEndsAt(): number|null; get pauseEndsAt(): number|null; get canPause(): boolean; pause(durationMs: number, now: number): boolean; cancelPause(now: number): boolean; }`
+- Scenario format (`spec/scenarios.json`): `[{ "name": str, "req": ["REQ-00x"], "steps": [{ "t": seconds, "idle"?: seconds, "inCall"?: bool, "inPhoneCall"?: bool, "do"?: "pause:<seconds>" | "cancelPause" }], "expect": [{ "t": seconds, "phase": "work|warning|break|paused", "canPause"?: bool, "pauseResult"?: bool }] }]`. The runner creates `new Scheduler(start ?? 0, {dayKey: ms => String(Math.floor(ms / 86_400_000)), lastPauseDay: scenario.lastPauseDay ?? null})`, walks t = 0…max in 1 s steps, applies the step input valid from its `t` until the next step (inputs persist), performs `do` at its `t` before `update`, and checks every `expect` at its `t` after `update`.
 
-- [ ] **Step 1: Write `docs/requirements.md`** with REQ-001 work interval 20 min, REQ-002 warning 10 s non-interactive, REQ-003 break 30 s all monitors black with the four lines + countdown, REQ-004 no input during break, REQ-005 idle ≥ 5 min restarts interval, REQ-006 fail-safe 35 s, REQ-007 fresh interval after restart/login, REQ-008 pause ≤ 3 h only in work phase, REQ-009 no chained pause, REQ-010 cancel pause → fresh interval, REQ-011 call exemption off by default, REQ-012 call wait capped at 3 h, REQ-013 phone call always holds (Android), REQ-014 settings only in work phase, REQ-015 clock jumps are rest. Each line: `| REQ | text | linux test | windows test | android test |`, windows/android columns `—` for now.
+- [ ] **Step 1: Write `docs/requirements.md`** with REQ-001 work interval 20 min, REQ-002 warning 10 s non-interactive, REQ-003 break 30 s all monitors black with the four lines + countdown, REQ-004 no input during break, REQ-005 idle ≥ 5 min restarts interval, REQ-006 fail-safe 35 s, REQ-007 fresh interval after restart/login, REQ-008 pause ≤ 3 h only in work phase, REQ-009 one pause per calendar day, survives restart, REQ-010 cancel pause → fresh interval, REQ-011 call exemption off by default, REQ-012 call wait capped at 3 h, REQ-013 phone call always holds (Android), REQ-014 settings only in work phase, REQ-015 clock jumps are rest. Each line: `| REQ | text | linux test | windows test | android test |`, windows/android columns `—` for now.
 
 - [ ] **Step 2: Write scenarios** (failing, scheduler not written):
   - `basic cycle`: expect t=1189 work, t=1190 warning, t=1199 warning, t=1200 break, t=1229 break, t=1230 work, t=2420 break.
@@ -89,7 +89,7 @@ linux/Makefile                                  test / pack / install
 
 **Files:** Modify `scheduler.js`, `spec/scenarios.json`, `docs/requirements.md`.
 
-**Interfaces:** Consumes Task 1 `Scheduler`. Produces working `pause`, `cancelPause`, `canPause`, `pauseEndsAt`.
+**Interfaces:** Consumes Task 1 `Scheduler`. Produces working `pause`, `cancelPause`, `canPause`, `pauseEndsAt`, `lastPauseDay`; exports `localDayKey(ms): string` (local date `YYYY-MM-DD`).
 
 - [ ] **Step 1: Add scenarios:**
   - `pause 1h`: t=10 `pause:3600` → pauseResult true, t=11 paused, t=3609 paused, t=3610 work, t=3610+1190 warning.
@@ -97,13 +97,15 @@ linux/Makefile                                  test / pack / install
   - `pause max`: t=10 `pause:10800` → true.
   - `no pause in warning`: t=1195 `pause:600` → false, t=1200 break.
   - `no pause in break`: t=1210 `pause:600` → false.
-  - `no chained pause`: t=10 `pause:60` true; t=80 `pause:60` false, canPause false; after first break (t=70+1200=1270 break, t=1300 work) t=1301 `pause:60` true.
+  - `one per day`: t=10 `pause:60` true; t=80 `pause:60` false, canPause false; t=86400 `pause:60` true (next day).
+  - `cancel uses the day`: t=10 `pause:3600`, t=20 `cancelPause`, t=30 `pause:60` false.
+  - `restart keeps the day`: `"lastPauseDay": "0"` → t=10 `pause:60` false, canPause false.
   - `cancel`: t=10 `pause:3600`; t=100 `cancelPause` → t=101 work, canPause false, t=100+1190 warning.
   - `idle ignored while paused`: t=10 `pause:3600`, step t=20 idle=900 → t=3609 paused.
 - [ ] **Step 2: Run** → new scenarios FAIL.
 - [ ] **Step 3: Implement** pause in `Scheduler`; zero/negative duration → false.
 - [ ] **Step 4: Run** → PASS. Update REQ-008/009/010 test refs.
-- [ ] **Step 5: Commit** `feat(core): pause up to 3 h, no chaining, cancel`.
+- [ ] **Step 5: Commit** `feat(core): one pause per day up to 3 h, cancel`.
 
 ### Task 3: Call holds
 
@@ -124,7 +126,7 @@ linux/Makefile                                  test / pack / install
 ### Task 4: Extension — overlay, notice, indicator, wiring
 
 **Files:**
-- Create: `metadata.json`, `extension.js`, `overlay.js`, `notice.js`, `indicator.js`, `stylesheet.css`, `schemas/org.gnome.shell.extensions.blackbreak.gschema.xml` (keys `call-exemption` b false, `exempt-mic` b true, `exempt-camera` b true), `linux/test/manual-checklist.md`
+- Create: `metadata.json`, `extension.js`, `overlay.js`, `notice.js`, `indicator.js`, `stylesheet.css`, `schemas/org.gnome.shell.extensions.blackbreak.gschema.xml` (keys `call-exemption` b false, `exempt-mic` b true, `exempt-camera` b true, `last-pause-day` s ''), `linux/test/manual-checklist.md`
 - Modify: `linux/Makefile` (`pack` → `gnome-extensions pack` into `dist/`, `install` → `gnome-extensions install --force` + note to log out/in), `docs/requirements.md`
 
 **Interfaces:**
@@ -132,9 +134,9 @@ linux/Makefile                                  test / pack / install
 - `overlay.js`: `export class Overlay { show(endsAtMs: number): void; hide(): void; destroy(): void }` — one `St.Widget` (black, `reactive: true`) added to `Main.layoutManager.addTopChrome` covering `global.stage` size, re-sized on `Main.layoutManager` `monitors-changed`; `Main.pushModal(widget, {actionMode: Shell.ActionMode.NONE})` grab, popped in `hide()`; labels for the four lines and countdown (`Math.ceil` seconds, updated each second); own `GLib.timeout_add(…, FAILSAFE_MS)` that calls `hide()` regardless of scheduler. `show()` is a no-op when `Main.sessionMode.isLocked`.
 - `notice.js`: `export class Notice { show(text: string): void; hide(): void; destroy(): void }` — small non-reactive `St.Label` top-center.
 - `indicator.js`: `export class Indicator extends PanelMenu.Button` with constructor `(scheduler, onChange)`; menu items `Pause 30 min`, `Pause 1 hour`, `Pause 2 hours`, `Pause 3 hours`, `Cancel pause`, separator, `Settings`; refreshes sensitivity from `scheduler.canPause` / `phase` on `open-state-changed`; status line `Next break in N min` / `Paused until HH:MM`.
-- `extension.js`: `enable()` creates Scheduler(Date.now()), Overlay, Notice, Indicator, a 1 s `GLib.timeout_add_seconds` tick: `idleMs` from `global.backend.get_core_idle_monitor().get_idletime()`, `inCall` from Task 5 (stub `false` here); on phase change: warning → `notice.show('Break in 10 s')`, break → `notice.hide(); overlay.show(scheduler.breakEndsAt)`, work/paused → hide both. `disable()` removes the timeout and destroys everything (grab released).
+- `extension.js`: `enable()` creates `new Scheduler(Date.now(), {lastPauseDay: settings.get_string('last-pause-day') || null})` and writes `scheduler.lastPauseDay` back to that key after every successful `pause()`; Overlay, Notice, Indicator, a 1 s `GLib.timeout_add_seconds` tick: `idleMs` from `global.backend.get_core_idle_monitor().get_idletime()`, `inCall` from Task 5 (stub `false` here); on phase change: warning → `notice.show('Break in 10 s')`, break → `notice.hide(); overlay.show(scheduler.breakEndsAt)`, work/paused → hide both. `disable()` removes the timeout and destroys everything (grab released).
 
-- [ ] **Step 1: Write `manual-checklist.md`**: break covers both monitors and top bar; Alt+Tab, Super, Alt+F2, Ctrl+Alt+T, mouse clicks, scroll do nothing; break ends at 30 s; countdown counts down; `Break in 10 s` appears 10 s before and has no buttons; menu pause items greyed in warning/break; pause 30 min works; second pause greyed until a break; cancel pause works; plug/unplug monitor during break; lock screen with break due; `gnome-extensions disable` from a VT (Ctrl+Alt+F3) during a break releases the screen; fail-safe: temporarily set scheduler to never end break (debug env `BLACKBREAK_DEBUG_STUCK=1`) → screen still clears at 35 s.
+- [ ] **Step 1: Write `manual-checklist.md`**: break covers both monitors and top bar; Alt+Tab, Super, Alt+F2, Ctrl+Alt+T, mouse clicks, scroll do nothing; break ends at 30 s; countdown counts down; `Break in 10 s` appears 10 s before and has no buttons; menu pause items greyed in warning/break; pause 30 min works; second pause the same day greyed, also after `gnome-extensions disable/enable`; cancel pause works; plug/unplug monitor during break; lock screen with break due; `gnome-extensions disable` from a VT (Ctrl+Alt+F3) during a break releases the screen; fail-safe: temporarily set scheduler to never end break (debug env `BLACKBREAK_DEBUG_STUCK=1`) → screen still clears at 35 s.
 - [ ] **Step 2: Implement the files above.** For fast manual runs, `BLACKBREAK_DEBUG_FAST=1` in the environment of a nested shell divides all durations by 60 (handled in `extension.js`, not in `scheduler.js`; see Task 1 `scale`).
 - [ ] **Step 3: Smoke test** in a nested shell: `make -C linux install && dbus-run-session -- env BLACKBREAK_DEBUG_FAST=1 gnome-shell --devkit` → enable extension inside, observe a break at 20 s, no `JS ERROR` lines for `blackbreak` in its output.
 - [ ] **Step 4: Run** `make -C linux test` → still PASS.

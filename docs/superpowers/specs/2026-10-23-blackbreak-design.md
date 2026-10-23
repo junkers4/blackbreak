@@ -43,10 +43,12 @@ Owner: GitHub user `junkers4`, public repo `junkers4/blackbreak`.
   at most 3 hours. Pausing is possible only while in a normal work
   interval — not during the 10-second warning and not during a break.
   When the pause ends, a fresh 20-minute interval starts.
-- **No chained pauses (owner's decision):** after a pause ends (or is
-  cancelled), at least one full break must happen before a new pause can
-  be set. A running pause can be cancelled early at any time; that starts
-  a fresh 20-minute interval.
+- **One pause per day (owner's decision):** at most one pause per
+  calendar day (local time, resets at midnight), up to 3 hours. Cancelling
+  it early still uses up that day's pause. The day of the last pause is
+  stored, so a restart does not give a new one.
+- A running pause can be cancelled early at any time; that starts a fresh
+  20-minute interval.
 - **Idle:** if the user has been idle (no input / screen off) for 5
   minutes, that counts as rest and the 20-minute interval restarts when
   they come back.
