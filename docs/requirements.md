@@ -17,3 +17,5 @@
 | REQ-013 | A phone call always holds a due break (Android). | scenarios: phone call uncapped | — | — |
 | REQ-014 | Settings can be changed only in the work phase. | manual: calls (switch during a break or a held break) | — | — |
 | REQ-015 | Clock jumps (suspend, backward step) count as rest. | unit: suspend in work, suspend in break, clock backward | — | — |
+
+The scenario and unit tests run in CI on every push (`.github/workflows/ci.yml`); the manual checks are in `linux/test/manual-checklist.md`.

@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: make -C linux test
+
+  gnome-pack:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gnome-shell libglib2.0-bin
+      - run: glib-compile-schemas --strict --dry-run linux/blackbreak@junkers4.github.io/schemas
+      - run: make -C linux pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blackbreak-gnome
+          path: linux/dist/*.zip
+      - if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" linux/dist/*.zip --title "$GITHUB_REF_NAME" --generate-notes
