@@ -54,6 +54,8 @@ function runTrace(tr) {
         last = now;
     };
     tr.events.forEach((ev, i) => {
+        const actions = ['now', 'walk', 'do'].filter(k => ev[k] !== undefined);
+        assert.ok(actions.length <= 1, `${tr.name} #${i}: more than one action`);
         if (ev.now !== undefined)
             update(ev.now, ev);
         else if (ev.walk !== undefined) {
@@ -62,6 +64,7 @@ function runTrace(tr) {
                 update(n);
             update(ev.walk);
         } else if (ev.do !== undefined) {
+            assert.ok(ev.at !== undefined, `${tr.name} #${i}: do needs at`);
             if (ev.do.startsWith('pause:'))
                 result = s.pause(Number(ev.do.slice(6)), ev.at);
             else if (ev.do === 'cancelPause')
@@ -69,8 +72,11 @@ function runTrace(tr) {
             else
                 assert.fail(`${tr.name} #${i}: unknown do ${ev.do}`);
         }
-        for (const [k, v] of Object.entries(ev.expect ?? {}))
+        for (const [k, v] of Object.entries(ev.expect ?? {})) {
+            if (k === 'result')
+                assert.ok(result !== undefined, `${tr.name} #${i}: no do yet`);
             assert.equal(k === 'result' ? result : s[k], v, `${tr.name} #${i} ${k}`);
+        }
     });
 }
 

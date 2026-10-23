@@ -38,7 +38,7 @@
     ]
   },
   {
-    "name": "gap just under the idle limit is not a jump", "req": [],
+    "name": "gap just under the idle limit is not a jump", "req": ["REQ-015"],
     "scale": 1, "lastPauseDay": null, "start": 0,
     "events": [
       { "walk": 1199999, "every": 299999 },
@@ -48,7 +48,7 @@
     ]
   },
   {
-    "name": "idle holds the interval, restarts at first non-idle update", "req": [],
+    "name": "idle holds the interval, restarts at first non-idle update", "req": ["REQ-005"],
     "scale": 1, "lastPauseDay": null, "start": 0,
     "events": [
       { "now": 1000, "idle": 300000 },
@@ -59,7 +59,7 @@
     ]
   },
   {
-    "name": "scale divides durations", "req": [],
+    "name": "scale divides durations", "req": ["REQ-001"],
     "scale": 10, "lastPauseDay": null, "start": 0,
     "events": [
       { "walk": 118999, "every": 1000, "expect": { "phase": "work" } },
@@ -67,7 +67,7 @@
     ]
   },
   {
-    "name": "pause basics, scaling and cancel result", "req": [],
+    "name": "pause basics, scaling and cancel result", "req": ["REQ-008", "REQ-009", "REQ-010"],
     "scale": 10, "lastPauseDay": null, "start": 0,
     "events": [
       { "expect": { "canPause": true } },
@@ -81,7 +81,7 @@
     ]
   },
   {
-    "name": "backward step during a pause clamps the end, keeps the pause", "req": [],
+    "name": "backward step during a pause clamps the end, keeps the pause", "req": ["REQ-008", "REQ-015"],
     "scale": 1, "lastPauseDay": null, "start": 0,
     "events": [
       { "now": 100000 },
@@ -92,7 +92,7 @@
     ]
   },
   {
-    "name": "suspend across the end of a pause gives a fresh interval from wake", "req": ["REQ-015"],
+    "name": "suspend across the end of a pause gives a fresh interval from wake", "req": ["REQ-008", "REQ-015"],
     "scale": 1, "lastPauseDay": null, "start": 0,
     "events": [
       { "now": 0 },
@@ -104,7 +104,7 @@
     ]
   },
   {
-    "name": "call first seen after a gap in the warning window does not hold", "req": [],
+    "name": "call first seen after a gap in the warning window does not hold", "req": ["REQ-011"],
     "scale": 1, "lastPauseDay": null, "start": 0,
     "events": [
       { "walk": 1100000, "every": 100000 },
@@ -112,7 +112,7 @@
     ]
   },
   {
-    "name": "next break time", "req": [],
+    "name": "next break time", "req": ["REQ-001"],
     "scale": 1, "lastPauseDay": null, "start": 0,
     "events": [
       { "now": 0, "expect": { "nextBreakAt": 1200000 } },
