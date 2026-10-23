@@ -1,0 +1,40 @@
+[
+  {
+    "name": "basic cycle",
+    "req": ["REQ-001", "REQ-002", "REQ-003"],
+    "steps": [{ "t": 0 }],
+    "expect": [
+      { "t": 0, "phase": "work", "canPause": true },
+      { "t": 1189, "phase": "work" },
+      { "t": 1190, "phase": "warning", "canPause": false },
+      { "t": 1199, "phase": "warning" },
+      { "t": 1200, "phase": "break", "canPause": false },
+      { "t": 1229, "phase": "break" },
+      { "t": 1230, "phase": "work", "canPause": true },
+      { "t": 2419, "phase": "work" },
+      { "t": 2420, "phase": "warning" },
+      { "t": 2430, "phase": "break" }
+    ]
+  },
+  {
+    "name": "idle resets",
+    "req": ["REQ-005"],
+    "steps": [{ "t": 0 }, { "t": 600, "idle": 300 }, { "t": 601, "idle": 0 }],
+    "expect": [
+      { "t": 599, "phase": "work" },
+      { "t": 1200, "phase": "work" },
+      { "t": 1790, "phase": "work" },
+      { "t": 1791, "phase": "warning" }
+    ]
+  },
+  {
+    "name": "restart is fresh",
+    "req": ["REQ-007"],
+    "start": 5000,
+    "steps": [{ "t": 5000 }],
+    "expect": [
+      { "t": 6189, "phase": "work" },
+      { "t": 6190, "phase": "warning" }
+    ]
+  }
+]
