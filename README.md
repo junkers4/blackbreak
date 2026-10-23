@@ -19,16 +19,22 @@ start again. After a restart or login a fresh interval begins.
 
 ## Install (GNOME 50, Wayland)
 
-Download `blackbreak@junkers4.github.io.shell-extension.zip` from the
-latest release, then:
+Download `blackbreak-linux-gnome-vX.Y.Z.zip` from the latest release,
+then:
 
-    gnome-extensions install blackbreak@junkers4.github.io.shell-extension.zip
+    gnome-extensions install blackbreak-linux-gnome-vX.Y.Z.zip
 
 Log out and back in, then:
 
     gnome-extensions enable blackbreak@junkers4.github.io
 
 From a checkout, `make -C linux install` does the same.
+
+## Releases
+
+Builds are on the GitHub Releases page, each with a `SHA256SUMS` file
+(check with `sha256sum -c SHA256SUMS`). Versions follow SemVer (`vX.Y.Z`
+tags on `main`); the notes of each release come from `CHANGELOG.md`.
 
 ## Pause
 

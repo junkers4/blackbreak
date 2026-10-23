@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
 
 jobs:
@@ -18,8 +17,6 @@ jobs:
 
   gnome-pack:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
       - run: |
@@ -31,7 +28,3 @@ jobs:
         with:
           name: blackbreak-gnome
           path: linux/dist/*.zip
-      - if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" linux/dist/*.zip --title "$GITHUB_REF_NAME" --generate-notes

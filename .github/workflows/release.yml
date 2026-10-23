@@ -1,0 +1,86 @@
+name: Release
+
+# A tag vX.Y.Z builds every platform and publishes one GitHub release.
+# To add a platform: add one job block that uploads an artifact named
+# release-<platform>, and add its name to `publish.needs`.
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: v
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "tag $GITHUB_REF_NAME is not vX.Y.Z" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Tag must be on main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - run: tools/release-notes.sh "${{ steps.v.outputs.version }}" > notes.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: notes.md
+
+  linux:
+    needs: notes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: make -C linux test
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gnome-shell libglib2.0-bin
+      - run: make -C linux pack VERSION="${{ needs.notes.outputs.version }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: linux/dist/blackbreak-linux-gnome-v*.zip
+          if-no-files-found: error
+
+  publish:
+    needs: [notes, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Collect files and checksums
+        run: |
+          mkdir out
+          cp artifacts/release-notes/notes.md notes.md
+          for d in artifacts/release-*; do
+            [ "$d" = artifacts/release-notes ] && continue
+            cp "$d"/* out/
+          done
+          cd out
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" out/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" out/* \
+              --title "BlackBreak $GITHUB_REF_NAME" \
+              --notes-file notes.md --verify-tag
+          fi
