@@ -26,6 +26,8 @@ export class Scheduler {
         this._phase = Phase.WORK;
         this._workStart = nowMs;
         this._breakStart = null;
+        this._holdSince = null; // when the warning was first due, while a call holds it
+        this._holdSpent = false; // a hold already ended in this interval
         this._lastNow = nowMs;
         this._idleHeld = false;
         this._pauseStart = null;
@@ -75,6 +77,8 @@ export class Scheduler {
         this._phase = Phase.WORK;
         this._workStart = now;
         this._breakStart = null;
+        this._holdSince = null;
+        this._holdSpent = false;
     }
 
     update({now, idleMs = 0, inCall = false, inPhoneCall = false}) {
@@ -110,11 +114,26 @@ export class Scheduler {
             return this._phase;
         }
 
-        // Calls are handled in a later task.
-        void inCall; void inPhoneCall;
-
         if (this._phase === Phase.BREAK && now >= this._breakStart + this._break)
             this._restart(this._breakStart + this._break);
+        if (this._phase === Phase.WORK && !this._holdSpent) {
+            // Only the work phase holds; calls in warning or break change nothing.
+            const dueAt = this._workStart + this._work - this._warn;
+            if (now >= dueAt) {
+                const capEnd = dueAt + MAX_CALL_WAIT_MS / this._scale;
+                if (inPhoneCall || (inCall && now < capEnd)) {
+                    this._holdSince = dueAt;
+                    return this._phase;
+                }
+                if (this._holdSince !== null) {
+                    // Released: the warning starts now (at the cap if it ran out).
+                    const at = inCall ? capEnd : now;
+                    this._workStart = at - (this._work - this._warn);
+                    this._holdSince = null;
+                    this._holdSpent = true;
+                }
+            }
+        }
         if (this._phase !== Phase.BREAK) {
             const elapsed = now - this._workStart;
             if (elapsed >= this._work) {

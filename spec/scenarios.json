@@ -132,5 +132,59 @@
       { "t": 3609, "phase": "paused" },
       { "t": 3610, "phase": "work" }
     ]
+  },
+  {
+    "name": "call holds",
+    "req": ["REQ-011"],
+    "steps": [{ "t": 0 }, { "t": 1000, "inCall": true }, { "t": 5000, "inCall": false }],
+    "expect": [
+      { "t": 1189, "phase": "work" },
+      { "t": 1190, "phase": "work", "canPause": true },
+      { "t": 5000, "phase": "warning" },
+      { "t": 5009, "phase": "warning" },
+      { "t": 5010, "phase": "break" }
+    ]
+  },
+  {
+    "name": "call cap",
+    "req": ["REQ-012"],
+    "steps": [{ "t": 0 }, { "t": 1000, "inCall": true }],
+    "expect": [
+      { "t": 11989, "phase": "work" },
+      { "t": 11990, "phase": "warning" },
+      { "t": 11999, "phase": "warning" },
+      { "t": 12000, "phase": "break" },
+      { "t": 12029, "phase": "break" },
+      { "t": 12030, "phase": "work" }
+    ]
+  },
+  {
+    "name": "call during warning ignored",
+    "req": ["REQ-011"],
+    "steps": [{ "t": 0 }, { "t": 1195, "inCall": true }],
+    "expect": [
+      { "t": 1195, "phase": "warning" },
+      { "t": 1200, "phase": "break" }
+    ]
+  },
+  {
+    "name": "call during break ignored",
+    "req": ["REQ-011"],
+    "steps": [{ "t": 0 }, { "t": 1210, "inCall": true }],
+    "expect": [
+      { "t": 1229, "phase": "break" },
+      { "t": 1230, "phase": "work" }
+    ]
+  },
+  {
+    "name": "phone call uncapped",
+    "req": ["REQ-013"],
+    "steps": [{ "t": 0 }, { "t": 1000, "inPhoneCall": true }, { "t": 21190, "inPhoneCall": false }],
+    "expect": [
+      { "t": 21189, "phase": "work" },
+      { "t": 21190, "phase": "warning" },
+      { "t": 21199, "phase": "warning" },
+      { "t": 21200, "phase": "break" }
+    ]
   }
 ]
