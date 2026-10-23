@@ -1,0 +1,124 @@
+[
+  {
+    "name": "suspend in work", "req": ["REQ-015"],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "now": 0 },
+      { "now": 600000 },
+      { "now": 15000000, "expect": { "phase": "work" } },
+      { "walk": 16189999, "expect": { "phase": "work" } },
+      { "now": 16190000, "expect": { "phase": "warning" } }
+    ]
+  },
+  {
+    "name": "suspend in break", "req": ["REQ-015"],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "walk": 1200000, "every": 60000 },
+      { "expect": { "phase": "break", "breakEndsAt": 1230000 } },
+      { "now": 8400000, "expect": { "phase": "work", "breakEndsAt": null } }
+    ]
+  },
+  {
+    "name": "clock backward", "req": ["REQ-015"],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "walk": 1000000 },
+      { "now": 100000, "expect": { "phase": "work" } },
+      { "walk": 1289999, "expect": { "phase": "work" } },
+      { "now": 1290000, "expect": { "phase": "warning" } }
+    ]
+  },
+  {
+    "name": "clock backward during warning ends it", "req": ["REQ-015"],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "walk": 1190000, "expect": { "phase": "warning", "warningEndsAt": 1200000 } },
+      { "now": 1185000, "expect": { "phase": "work", "warningEndsAt": null } }
+    ]
+  },
+  {
+    "name": "gap just under the idle limit is not a jump", "req": [],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "walk": 1199999, "every": 299999 },
+      { "now": 1200000, "expect": { "phase": "break" } },
+      { "now": 1230000, "expect": { "phase": "work", "nextBreakAt": 2430000 } },
+      { "now": 1530000, "expect": { "nextBreakAt": 2730000 } }
+    ]
+  },
+  {
+    "name": "idle holds the interval, restarts at first non-idle update", "req": [],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "now": 1000, "idle": 300000 },
+      { "now": 2000, "idle": 301000 },
+      { "now": 3000, "idle": 0 },
+      { "walk": 1192999, "expect": { "phase": "work" } },
+      { "now": 1193000, "expect": { "phase": "warning" } }
+    ]
+  },
+  {
+    "name": "scale divides durations", "req": [],
+    "scale": 10, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "walk": 118999, "every": 1000, "expect": { "phase": "work" } },
+      { "now": 119000, "expect": { "phase": "warning" } }
+    ]
+  },
+  {
+    "name": "pause basics, scaling and cancel result", "req": [],
+    "scale": 10, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "expect": { "canPause": true } },
+      { "do": "pause:0", "at": 0, "expect": { "result": false } },
+      { "do": "pause:-5", "at": 0, "expect": { "result": false } },
+      { "do": "cancelPause", "at": 0, "expect": { "result": false } },
+      { "do": "pause:100000", "at": 0, "expect": { "result": true } },
+      { "expect": { "pauseEndsAt": 10000, "lastPauseDay": "0" } },
+      { "do": "cancelPause", "at": 1000, "expect": { "result": true } },
+      { "expect": { "pauseEndsAt": null } }
+    ]
+  },
+  {
+    "name": "backward step during a pause clamps the end, keeps the pause", "req": [],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "now": 100000 },
+      { "do": "pause:10800000", "at": 100000 },
+      { "now": 110000 },
+      { "now": 50000, "expect": { "phase": "paused", "pauseEndsAt": 10850000 } },
+      { "now": 60000, "expect": { "phase": "paused" } }
+    ]
+  },
+  {
+    "name": "suspend across the end of a pause gives a fresh interval from wake", "req": ["REQ-015"],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "now": 0 },
+      { "do": "pause:3600000", "at": 0 },
+      { "now": 1000 },
+      { "now": 18000000, "expect": { "phase": "work" } },
+      { "walk": 19189999, "expect": { "phase": "work" } },
+      { "now": 19190000, "expect": { "phase": "warning" } }
+    ]
+  },
+  {
+    "name": "call first seen after a gap in the warning window does not hold", "req": [],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "walk": 1100000, "every": 100000 },
+      { "now": 1195000, "inCall": true, "expect": { "phase": "warning" } }
+    ]
+  },
+  {
+    "name": "next break time", "req": [],
+    "scale": 1, "lastPauseDay": null, "start": 0,
+    "events": [
+      { "now": 0, "expect": { "nextBreakAt": 1200000 } },
+      { "walk": 1190000, "expect": { "nextBreakAt": 1200000 } },
+      { "now": 1200000, "expect": { "nextBreakAt": null } },
+      { "now": 1230000, "expect": { "nextBreakAt": 2430000 } }
+    ]
+  }
+]

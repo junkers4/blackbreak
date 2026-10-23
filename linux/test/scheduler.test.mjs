@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {Scheduler, Phase, WORK_MS, WARN_MS, BREAK_MS, IDLE_MS}
+import {Scheduler}
     from '../blackbreak@junkers4.github.io/scheduler.js';
 
 const scenarios = JSON.parse(
     readFileSync(new URL('../../spec/scenarios.json', import.meta.url), 'utf8'));
+const traces = JSON.parse(
+    readFileSync(new URL('../../spec/traces.json', import.meta.url), 'utf8'));
 const dayKey = ms => String(Math.floor(ms / 86_400_000));
 
 function run(sc) {
@@ -40,121 +42,37 @@ function run(sc) {
 for (const sc of scenarios)
     test(`scenario: ${sc.name}`, () => run(sc));
 
-const T = WORK_MS - WARN_MS;
-
-// Walk forward in steps below IDLE_MS so no step counts as a clock jump.
-function walk(s, from, to, step = 60_000) {
-    for (let n = from + step; n < to; n += step)
-        s.update({now: n});
-    return s.update({now: to});
+function runTrace(tr) {
+    const start = tr.start ?? 0;
+    const s = new Scheduler(start, {scale: tr.scale ?? 1, dayKey,
+        lastPauseDay: tr.lastPauseDay ?? null});
+    let last = start;
+    let result;
+    const update = (now, ev = {}) => {
+        s.update({now, idleMs: ev.idle ?? 0, inCall: ev.inCall ?? false,
+            inPhoneCall: ev.inPhoneCall ?? false});
+        last = now;
+    };
+    tr.events.forEach((ev, i) => {
+        if (ev.now !== undefined)
+            update(ev.now, ev);
+        else if (ev.walk !== undefined) {
+            const every = ev.every ?? 60_000;
+            for (let n = last + every; n < ev.walk; n += every)
+                update(n);
+            update(ev.walk);
+        } else if (ev.do !== undefined) {
+            if (ev.do.startsWith('pause:'))
+                result = s.pause(Number(ev.do.slice(6)), ev.at);
+            else if (ev.do === 'cancelPause')
+                result = s.cancelPause(ev.at);
+            else
+                assert.fail(`${tr.name} #${i}: unknown do ${ev.do}`);
+        }
+        for (const [k, v] of Object.entries(ev.expect ?? {}))
+            assert.equal(k === 'result' ? result : s[k], v, `${tr.name} #${i} ${k}`);
+    });
 }
 
-test('suspend in work', () => {
-    const s = new Scheduler(0);
-    s.update({now: 0});
-    s.update({now: 600_000});
-    const jump = 600_000 + 4 * 3_600_000;
-    assert.equal(s.update({now: jump}), Phase.WORK);
-    assert.equal(walk(s, jump, jump + T - 1), Phase.WORK);
-    assert.equal(s.update({now: jump + T}), Phase.WARNING);
-});
-
-test('suspend in break', () => {
-    const s = new Scheduler(0);
-    walk(s, 0, WORK_MS);
-    assert.equal(s.phase, Phase.BREAK);
-    assert.equal(s.breakEndsAt, WORK_MS + BREAK_MS);
-    assert.equal(s.update({now: WORK_MS + 2 * 3_600_000}), Phase.WORK);
-    assert.equal(s.breakEndsAt, null);
-});
-
-test('clock backward', () => {
-    const s = new Scheduler(0);
-    walk(s, 0, 1_000_000);
-    assert.equal(s.update({now: 100_000}), Phase.WORK);
-    assert.equal(walk(s, 100_000, 100_000 + T - 1), Phase.WORK);
-    assert.equal(s.update({now: 100_000 + T}), Phase.WARNING);
-});
-
-test('clock backward during warning ends it', () => {
-    const s = new Scheduler(0);
-    walk(s, 0, T);
-    assert.equal(s.phase, Phase.WARNING);
-    assert.equal(s.warningEndsAt, WORK_MS);
-    assert.equal(s.update({now: T - 5000}), Phase.WORK);
-    assert.equal(s.warningEndsAt, null);
-});
-
-test('gap just under the idle limit is not a jump', () => {
-    const s = new Scheduler(0);
-    walk(s, 0, WORK_MS - 1, IDLE_MS - 1);
-    assert.equal(s.update({now: WORK_MS}), Phase.BREAK);
-});
-
-test('idle holds the interval, restarts at first non-idle update', () => {
-    const s = new Scheduler(0);
-    s.update({now: 1000, idleMs: IDLE_MS});
-    s.update({now: 2000, idleMs: IDLE_MS + 1000});
-    s.update({now: 3000, idleMs: 0});
-    assert.equal(walk(s, 3000, 3000 + T - 1), Phase.WORK);
-    assert.equal(s.update({now: 3000 + T}), Phase.WARNING);
-});
-
-test('scale divides durations', () => {
-    const s = new Scheduler(0, {scale: 10});
-    assert.equal(walk(s, 0, T / 10 - 1, 1000), Phase.WORK);
-    assert.equal(s.update({now: T / 10}), Phase.WARNING);
-});
-
-test('pause basics, scaling and cancel result', () => {
-    const s = new Scheduler(0, {scale: 10, dayKey: ms => String(Math.floor(ms / 86_400_000))});
-    assert.equal(s.canPause, true);
-    assert.equal(s.pause(0, 0), false);
-    assert.equal(s.pause(-5, 0), false);
-    assert.equal(s.cancelPause(0), false);
-    assert.equal(s.pause(100_000, 0), true);
-    assert.equal(s.pauseEndsAt, 10_000);
-    assert.equal(s.lastPauseDay, '0');
-    assert.equal(s.cancelPause(1000), true);
-    assert.equal(s.pauseEndsAt, null);
-});
-
-test('backward step during a pause clamps the end, keeps the pause', () => {
-    const s = new Scheduler(0, {dayKey: () => 'd'});
-    s.update({now: 100_000});
-    s.pause(10_800_000, 100_000);
-    s.update({now: 110_000});
-    assert.equal(s.update({now: 50_000}), Phase.PAUSED);
-    assert.equal(s.pauseEndsAt, 50_000 + 10_800_000);
-    s.update({now: 60_000});
-    assert.equal(s.phase, Phase.PAUSED);
-});
-
-test('suspend across the end of a pause gives a fresh interval from wake', () => {
-    const s = new Scheduler(0, {dayKey: () => 'd'});
-    s.update({now: 0});
-    s.pause(3_600_000, 0);
-    s.update({now: 1000});
-    const wake = 5 * 3_600_000;
-    assert.equal(s.update({now: wake}), Phase.WORK);
-    assert.equal(walk(s, wake, wake + T - 1), Phase.WORK);
-    assert.equal(s.update({now: wake + T}), Phase.WARNING);
-});
-
-test('call first seen after a gap in the warning window does not hold', () => {
-    const s = new Scheduler(0);
-    walk(s, 0, 1_100_000, 100_000);
-    assert.equal(s.update({now: 1_195_000, inCall: true}), Phase.WARNING);
-});
-
-test('next break time', () => {
-    const s = new Scheduler(0);
-    s.update({now: 0});
-    assert.equal(s.nextBreakAt, WORK_MS);
-    walk(s, 0, T);
-    assert.equal(s.nextBreakAt, WORK_MS);
-    s.update({now: WORK_MS});
-    assert.equal(s.nextBreakAt, null);
-    s.update({now: WORK_MS + BREAK_MS});
-    assert.equal(s.nextBreakAt, 2 * WORK_MS + BREAK_MS);
-});
+for (const tr of traces)
+    test(`trace: ${tr.name}`, () => runTrace(tr));
