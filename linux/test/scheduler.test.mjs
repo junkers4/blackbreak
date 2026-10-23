@@ -118,3 +118,25 @@ test('pause basics, scaling and cancel result', () => {
     assert.equal(s.cancelPause(1000), true);
     assert.equal(s.pauseEndsAt, null);
 });
+
+test('backward step during a pause clamps the end, keeps the pause', () => {
+    const s = new Scheduler(0, {dayKey: () => 'd'});
+    s.update({now: 100_000});
+    s.pause(10_800_000, 100_000);
+    s.update({now: 110_000});
+    assert.equal(s.update({now: 50_000}), Phase.PAUSED);
+    assert.equal(s.pauseEndsAt, 50_000 + 10_800_000);
+    s.update({now: 60_000});
+    assert.equal(s.phase, Phase.PAUSED);
+});
+
+test('suspend across the end of a pause gives a fresh interval from wake', () => {
+    const s = new Scheduler(0, {dayKey: () => 'd'});
+    s.update({now: 0});
+    s.pause(3_600_000, 0);
+    s.update({now: 1000});
+    const wake = 5 * 3_600_000;
+    assert.equal(s.update({now: wake}), Phase.WORK);
+    assert.equal(walk(s, wake, wake + T - 1), Phase.WORK);
+    assert.equal(s.update({now: wake + T}), Phase.WARNING);
+});

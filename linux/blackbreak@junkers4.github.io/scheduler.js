@@ -79,12 +79,17 @@ export class Scheduler {
 
     update({now, idleMs = 0, inCall = false, inPhoneCall = false}) {
         if (this._phase === Phase.PAUSED) {
-            // Idle input, suspend and calls do not matter; only the pause clock.
+            // Idle input and calls do not matter; only the pause clock.
+            const prev = this._lastNow;
             this._lastNow = now;
             this._idleHeld = false;
-            if (now < this._pauseStart) this._endPause(now); // clock stepped back
-            else if (now >= this._pauseEnd) this._endPause(this._pauseEnd);
-            else return this._phase;
+            if (now < prev) // backward step: never longer than the cap from now
+                this._pauseEnd = Math.min(this._pauseEnd, now + MAX_PAUSE_MS / this._scale);
+            if (now < this._pauseEnd)
+                return this._phase;
+            // Suspended through the end, or idle that long: the rest counts.
+            const rested = now - prev >= this._idle || now - this._pauseEnd >= this._idle;
+            this._endPause(rested ? now : this._pauseEnd);
             return this.update({now, idleMs, inCall, inPhoneCall});
         }
         const gap = now - this._lastNow;
