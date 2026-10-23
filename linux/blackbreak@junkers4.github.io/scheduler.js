@@ -16,6 +16,7 @@ export function localDayKey(ms) {
 
 export class Scheduler {
     constructor(nowMs, {scale = 1, dayKey = localDayKey, lastPauseDay = null} = {}) {
+        this._scale = scale;
         this._work = WORK_MS / scale;
         this._warn = WARN_MS / scale;
         this._break = BREAK_MS / scale;
@@ -27,6 +28,8 @@ export class Scheduler {
         this._breakStart = null;
         this._lastNow = nowMs;
         this._idleHeld = false;
+        this._pauseStart = null;
+        this._pauseEnd = null;
     }
 
     get lastPauseDay() { return this._lastPauseDay; }
@@ -37,11 +40,36 @@ export class Scheduler {
     get warningEndsAt() {
         return this._phase === Phase.WARNING ? this._workStart + this._work : null;
     }
-    get pauseEndsAt() { return null; }
-    get canPause() { return this._phase === Phase.WORK; }
+    get pauseEndsAt() { return this._phase === Phase.PAUSED ? this._pauseEnd : null; }
+    get canPause() {
+        return this._phase === Phase.WORK &&
+            this._dayKey(this._lastNow) !== this._lastPauseDay;
+    }
 
-    pause(_durationMs, _now) { return false; }
-    cancelPause(_now) { return false; }
+    // Durations are scaled like every other duration; the cap is checked unscaled.
+    pause(durationMs, now) {
+        if (this._phase !== Phase.WORK || !(durationMs > 0) ||
+            durationMs > MAX_PAUSE_MS || this._dayKey(now) === this._lastPauseDay)
+            return false;
+        this._phase = Phase.PAUSED;
+        this._pauseStart = now;
+        this._pauseEnd = now + durationMs / this._scale;
+        this._lastPauseDay = this._dayKey(now);
+        this._breakStart = null;
+        return true;
+    }
+
+    cancelPause(now) {
+        if (this._phase !== Phase.PAUSED)
+            return false;
+        this._endPause(now);
+        return true;
+    }
+
+    _endPause(at) {
+        this._pauseStart = this._pauseEnd = null;
+        this._restart(at);
+    }
 
     _restart(now) {
         this._phase = Phase.WORK;
@@ -50,6 +78,15 @@ export class Scheduler {
     }
 
     update({now, idleMs = 0, inCall = false, inPhoneCall = false}) {
+        if (this._phase === Phase.PAUSED) {
+            // Idle input, suspend and calls do not matter; only the pause clock.
+            this._lastNow = now;
+            this._idleHeld = false;
+            if (now < this._pauseStart) this._endPause(now); // clock stepped back
+            else if (now >= this._pauseEnd) this._endPause(this._pauseEnd);
+            else return this._phase;
+            return this.update({now, idleMs, inCall, inPhoneCall});
+        }
         const gap = now - this._lastNow;
         this._lastNow = now;
         if (gap < 0 || gap >= this._idle) {

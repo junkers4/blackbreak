@@ -1,40 +1,426 @@
 [
   {
     "name": "basic cycle",
-    "req": ["REQ-001", "REQ-002", "REQ-003"],
-    "steps": [{ "t": 0 }],
+    "req": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-003"
+    ],
+    "steps": [
+      {
+        "t": 0
+      }
+    ],
     "expect": [
-      { "t": 0, "phase": "work", "canPause": true },
-      { "t": 1189, "phase": "work" },
-      { "t": 1190, "phase": "warning", "canPause": false },
-      { "t": 1199, "phase": "warning" },
-      { "t": 1200, "phase": "break", "canPause": false },
-      { "t": 1229, "phase": "break" },
-      { "t": 1230, "phase": "work", "canPause": true },
-      { "t": 2419, "phase": "work" },
-      { "t": 2420, "phase": "warning" },
-      { "t": 2430, "phase": "break" }
+      {
+        "t": 0,
+        "phase": "work",
+        "canPause": true
+      },
+      {
+        "t": 1189,
+        "phase": "work"
+      },
+      {
+        "t": 1190,
+        "phase": "warning",
+        "canPause": false
+      },
+      {
+        "t": 1199,
+        "phase": "warning"
+      },
+      {
+        "t": 1200,
+        "phase": "break",
+        "canPause": false
+      },
+      {
+        "t": 1229,
+        "phase": "break"
+      },
+      {
+        "t": 1230,
+        "phase": "work",
+        "canPause": true
+      },
+      {
+        "t": 2419,
+        "phase": "work"
+      },
+      {
+        "t": 2420,
+        "phase": "warning"
+      },
+      {
+        "t": 2430,
+        "phase": "break"
+      }
     ]
   },
   {
     "name": "idle resets",
-    "req": ["REQ-005"],
-    "steps": [{ "t": 0 }, { "t": 600, "idle": 300 }, { "t": 601, "idle": 0 }],
+    "req": [
+      "REQ-005"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 600,
+        "idle": 300
+      },
+      {
+        "t": 601,
+        "idle": 0
+      }
+    ],
     "expect": [
-      { "t": 599, "phase": "work" },
-      { "t": 1200, "phase": "work" },
-      { "t": 1790, "phase": "work" },
-      { "t": 1791, "phase": "warning" }
+      {
+        "t": 599,
+        "phase": "work"
+      },
+      {
+        "t": 1200,
+        "phase": "work"
+      },
+      {
+        "t": 1790,
+        "phase": "work"
+      },
+      {
+        "t": 1791,
+        "phase": "warning"
+      }
     ]
   },
   {
     "name": "restart is fresh",
-    "req": ["REQ-007"],
+    "req": [
+      "REQ-007"
+    ],
     "start": 5000,
-    "steps": [{ "t": 5000 }],
+    "steps": [
+      {
+        "t": 5000
+      }
+    ],
     "expect": [
-      { "t": 6189, "phase": "work" },
-      { "t": 6190, "phase": "warning" }
+      {
+        "t": 6189,
+        "phase": "work"
+      },
+      {
+        "t": 6190,
+        "phase": "warning"
+      }
+    ]
+  },
+  {
+    "name": "pause 1h",
+    "req": [
+      "REQ-008"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 10,
+        "do": "pause:3600"
+      }
+    ],
+    "expect": [
+      {
+        "t": 10,
+        "phase": "paused",
+        "pauseResult": true
+      },
+      {
+        "t": 11,
+        "phase": "paused",
+        "canPause": false
+      },
+      {
+        "t": 3609,
+        "phase": "paused"
+      },
+      {
+        "t": 3610,
+        "phase": "work"
+      },
+      {
+        "t": 4799,
+        "phase": "work"
+      },
+      {
+        "t": 4800,
+        "phase": "warning"
+      }
+    ]
+  },
+  {
+    "name": "pause too long",
+    "req": [
+      "REQ-008"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 10,
+        "do": "pause:10801"
+      }
+    ],
+    "expect": [
+      {
+        "t": 10,
+        "phase": "work",
+        "pauseResult": false
+      },
+      {
+        "t": 11,
+        "phase": "work"
+      }
+    ]
+  },
+  {
+    "name": "pause max",
+    "req": [
+      "REQ-008"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 10,
+        "do": "pause:10800"
+      }
+    ],
+    "expect": [
+      {
+        "t": 10,
+        "phase": "paused",
+        "pauseResult": true
+      },
+      {
+        "t": 11,
+        "phase": "paused"
+      }
+    ]
+  },
+  {
+    "name": "no pause in warning",
+    "req": [
+      "REQ-008"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 1195,
+        "do": "pause:600"
+      }
+    ],
+    "expect": [
+      {
+        "t": 1195,
+        "phase": "warning",
+        "pauseResult": false
+      },
+      {
+        "t": 1200,
+        "phase": "break"
+      }
+    ]
+  },
+  {
+    "name": "no pause in break",
+    "req": [
+      "REQ-008"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 1210,
+        "do": "pause:600"
+      }
+    ],
+    "expect": [
+      {
+        "t": 1210,
+        "phase": "break",
+        "pauseResult": false
+      }
+    ]
+  },
+  {
+    "name": "one per day",
+    "req": [
+      "REQ-009"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 10,
+        "do": "pause:60"
+      },
+      {
+        "t": 80,
+        "do": "pause:60"
+      },
+      {
+        "t": 86400,
+        "do": "pause:60"
+      }
+    ],
+    "expect": [
+      {
+        "t": 10,
+        "phase": "paused",
+        "pauseResult": true
+      },
+      {
+        "t": 80,
+        "phase": "work",
+        "pauseResult": false,
+        "canPause": false
+      },
+      {
+        "t": 86400,
+        "phase": "paused",
+        "pauseResult": true
+      }
+    ]
+  },
+  {
+    "name": "cancel uses the day",
+    "req": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 10,
+        "do": "pause:3600"
+      },
+      {
+        "t": 20,
+        "do": "cancelPause"
+      },
+      {
+        "t": 30,
+        "do": "pause:60"
+      }
+    ],
+    "expect": [
+      {
+        "t": 30,
+        "phase": "work",
+        "pauseResult": false
+      }
+    ]
+  },
+  {
+    "name": "restart keeps the day",
+    "req": [
+      "REQ-009"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 10,
+        "do": "pause:60"
+      }
+    ],
+    "expect": [
+      {
+        "t": 10,
+        "phase": "work",
+        "pauseResult": false,
+        "canPause": false
+      }
+    ],
+    "lastPauseDay": "0"
+  },
+  {
+    "name": "cancel",
+    "req": [
+      "REQ-010"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 10,
+        "do": "pause:3600"
+      },
+      {
+        "t": 100,
+        "do": "cancelPause"
+      }
+    ],
+    "expect": [
+      {
+        "t": 100,
+        "phase": "work"
+      },
+      {
+        "t": 101,
+        "phase": "work",
+        "canPause": false
+      },
+      {
+        "t": 1289,
+        "phase": "work"
+      },
+      {
+        "t": 1290,
+        "phase": "warning"
+      }
+    ]
+  },
+  {
+    "name": "idle ignored while paused",
+    "req": [
+      "REQ-008"
+    ],
+    "steps": [
+      {
+        "t": 0
+      },
+      {
+        "t": 10,
+        "do": "pause:3600"
+      },
+      {
+        "t": 20,
+        "idle": 900
+      }
+    ],
+    "expect": [
+      {
+        "t": 3609,
+        "phase": "paused"
+      },
+      {
+        "t": 3610,
+        "phase": "work"
+      }
     ]
   }
 ]

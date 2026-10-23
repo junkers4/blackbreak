@@ -106,11 +106,15 @@ test('scale divides durations', () => {
     assert.equal(s.update({now: T / 10}), Phase.WARNING);
 });
 
-test('pause stubs and canPause', () => {
-    const s = new Scheduler(0);
+test('pause basics, scaling and cancel result', () => {
+    const s = new Scheduler(0, {scale: 10, dayKey: ms => String(Math.floor(ms / 86_400_000))});
     assert.equal(s.canPause, true);
-    assert.equal(s.pause(1000, 0), false);
+    assert.equal(s.pause(0, 0), false);
+    assert.equal(s.pause(-5, 0), false);
     assert.equal(s.cancelPause(0), false);
+    assert.equal(s.pause(100_000, 0), true);
+    assert.equal(s.pauseEndsAt, 10_000);
+    assert.equal(s.lastPauseDay, '0');
+    assert.equal(s.cancelPause(1000), true);
     assert.equal(s.pauseEndsAt, null);
-    assert.equal(s.lastPauseDay, null);
 });
