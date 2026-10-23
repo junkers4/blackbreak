@@ -27,6 +27,8 @@ export class Scheduler {
         this._workStart = nowMs;
         this._breakStart = null;
         this._holdSince = null; // when the warning was first due, while a call holds it
+        this._callSeen = false; // a call was active before the warning was due
+        this._phoneHeld = false; // the current hold included a phone call
         this._holdSpent = false; // a hold already ended in this interval
         this._lastNow = nowMs;
         this._idleHeld = false;
@@ -79,6 +81,8 @@ export class Scheduler {
         this._breakStart = null;
         this._holdSince = null;
         this._holdSpent = false;
+        this._callSeen = false;
+        this._phoneHeld = false;
     }
 
     update({now, idleMs = 0, inCall = false, inPhoneCall = false}) {
@@ -119,18 +123,23 @@ export class Scheduler {
         if (this._phase === Phase.WORK && !this._holdSpent) {
             // Only the work phase holds; calls in warning or break change nothing.
             const dueAt = this._workStart + this._work - this._warn;
-            if (now >= dueAt) {
+            if (now < dueAt)
+                this._callSeen = inCall || inPhoneCall;
+            else if (this._holdSince !== null || this._callSeen) {
+                // A call first seen once the warning is due changes nothing.
                 const capEnd = dueAt + MAX_CALL_WAIT_MS / this._scale;
                 if (inPhoneCall || (inCall && now < capEnd)) {
                     this._holdSince = dueAt;
+                    this._phoneHeld ||= inPhoneCall;
                     return this._phase;
                 }
                 if (this._holdSince !== null) {
                     // Released: the warning starts now (at the cap if it ran out).
-                    const at = inCall ? capEnd : now;
+                    const at = inCall && !this._phoneHeld ? capEnd : now;
                     this._workStart = at - (this._work - this._warn);
                     this._holdSince = null;
                     this._holdSpent = true;
+                    this._phoneHeld = false;
                 }
             }
         }

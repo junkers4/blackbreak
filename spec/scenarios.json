@@ -186,5 +186,16 @@
       { "t": 21199, "phase": "warning" },
       { "t": 21200, "phase": "break" }
     ]
+  },
+  {
+    "name": "phone call then call still on",
+    "req": ["REQ-013"],
+    "steps": [{ "t": 0 }, { "t": 1000, "inPhoneCall": true, "inCall": true }, { "t": 15000, "inPhoneCall": false, "inCall": true }],
+    "expect": [
+      { "t": 14999, "phase": "work" },
+      { "t": 15000, "phase": "warning" },
+      { "t": 15009, "phase": "warning" },
+      { "t": 15010, "phase": "break" }
+    ]
   }
 ]

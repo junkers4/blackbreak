@@ -140,3 +140,9 @@ test('suspend across the end of a pause gives a fresh interval from wake', () =>
     assert.equal(walk(s, wake, wake + T - 1), Phase.WORK);
     assert.equal(s.update({now: wake + T}), Phase.WARNING);
 });
+
+test('call first seen after a gap in the warning window does not hold', () => {
+    const s = new Scheduler(0);
+    walk(s, 0, 1_100_000, 100_000);
+    assert.equal(s.update({now: 1_195_000, inCall: true}), Phase.WARNING);
+});
