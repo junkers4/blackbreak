@@ -1,0 +1,9 @@
+{
+  "uuid": "blackbreak@junkers4.github.io",
+  "name": "BlackBreak",
+  "description": "20-20-20 breaks: every 20 minutes the screen goes black for 30 seconds.",
+  "shell-version": ["50"],
+  "session-modes": ["user", "unlock-dialog"],
+  "settings-schema": "org.gnome.shell.extensions.blackbreak",
+  "url": "https://github.com/junkers4/blackbreak"
+}

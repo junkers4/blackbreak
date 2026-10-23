@@ -44,6 +44,10 @@ export class Scheduler {
     get warningEndsAt() {
         return this._phase === Phase.WARNING ? this._workStart + this._work : null;
     }
+    get nextBreakAt() {
+        return this._phase === Phase.WORK || this._phase === Phase.WARNING
+            ? this._workStart + this._work : null;
+    }
     get pauseEndsAt() { return this._phase === Phase.PAUSED ? this._pauseEnd : null; }
     get canPause() {
         return this._phase === Phase.WORK &&

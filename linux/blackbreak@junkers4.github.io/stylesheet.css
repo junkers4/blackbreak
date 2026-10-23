@@ -1,0 +1,30 @@
+.blackbreak-overlay {
+  background-color: #000000;
+}
+
+.blackbreak-text {
+  spacing: 12px;
+}
+
+.blackbreak-line {
+  color: #9a9a9a;
+  font-size: 20pt;
+  font-weight: 300;
+  text-align: center;
+}
+
+.blackbreak-countdown {
+  color: #5a5a5a;
+  font-size: 14pt;
+  font-weight: 300;
+  padding-top: 24px;
+  text-align: center;
+}
+
+.blackbreak-notice {
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-size: 12pt;
+}

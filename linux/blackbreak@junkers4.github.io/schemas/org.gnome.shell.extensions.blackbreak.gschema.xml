@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.blackbreak"
+          path="/org/gnome/shell/extensions/blackbreak/">
+    <key name="call-exemption" type="b">
+      <default>false</default>
+      <summary>Wait with the break while in a call</summary>
+    </key>
+    <key name="exempt-mic" type="b">
+      <default>true</default>
+      <summary>A microphone in use counts as a call</summary>
+    </key>
+    <key name="exempt-camera" type="b">
+      <default>true</default>
+      <summary>A camera in use counts as a call</summary>
+    </key>
+    <key name="last-pause-day" type="s">
+      <default>''</default>
+      <summary>Local day (YYYY-MM-DD) of the last pause</summary>
+    </key>
+  </schema>
+</schemalist>

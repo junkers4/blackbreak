@@ -146,3 +146,15 @@ test('call first seen after a gap in the warning window does not hold', () => {
     walk(s, 0, 1_100_000, 100_000);
     assert.equal(s.update({now: 1_195_000, inCall: true}), Phase.WARNING);
 });
+
+test('next break time', () => {
+    const s = new Scheduler(0);
+    s.update({now: 0});
+    assert.equal(s.nextBreakAt, WORK_MS);
+    walk(s, 0, T);
+    assert.equal(s.nextBreakAt, WORK_MS);
+    s.update({now: WORK_MS});
+    assert.equal(s.nextBreakAt, null);
+    s.update({now: WORK_MS + BREAK_MS});
+    assert.equal(s.nextBreakAt, 2 * WORK_MS + BREAK_MS);
+});
