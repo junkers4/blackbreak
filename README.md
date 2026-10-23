@@ -33,7 +33,7 @@ From a checkout, `make -C linux install` does the same.
 ## Releases
 
 Builds are on the GitHub Releases page, each with a `SHA256SUMS` file
-(check with `sha256sum -c SHA256SUMS`). Versions follow SemVer (`vX.Y.Z`
+(check with `sha256sum -c --ignore-missing SHA256SUMS`). Versions follow SemVer (`vX.Y.Z`
 tags on `main`); the notes of each release come from `CHANGELOG.md`.
 
 ## Pause
@@ -70,8 +70,8 @@ anything goes wrong, the break screen removes itself after 35 seconds.
     make -C linux pack    # zip in linux/dist/
 
 The timing rules live in `linux/blackbreak@junkers4.github.io/scheduler.js`
-and are pinned by `spec/scenarios.json`, which the other platforms will
-reuse. Requirements and their tests: `docs/requirements.md`. Manual
+and are pinned by `spec/scenarios.json` and `spec/traces.json` (format in
+`spec/README.md`; tests cover both), which the other platforms will reuse. Requirements and their tests: `docs/requirements.md`. Manual
 checks: `linux/test/manual-checklist.md`.
 
 ## License

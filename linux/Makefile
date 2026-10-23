@@ -13,6 +13,7 @@ pack:
 	mkdir -p dist build
 	cp -r $(UUID) build/$(UUID)
 	sed -i 's|^  "name": "BlackBreak",|&\n  "version-name": "$(VERSION)",|' build/$(UUID)/metadata.json
+	grep -q '"version-name": "$(VERSION)"' build/$(UUID)/metadata.json || { echo "version stamp failed"; exit 1; }
 	cd build && gnome-extensions pack --force --out-dir=../dist \
 		$(foreach f,$(EXTRA),--extra-source=$(f)) $(UUID)
 	mv dist/$(UUID).shell-extension.zip $(ZIP)

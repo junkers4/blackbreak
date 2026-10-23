@@ -6,9 +6,15 @@ runs against its own scheduler. Times are milliseconds unless noted.
 ## scenarios.json (coarse, seconds, one step per second)
 
 A list of `{name, req, start?, lastPauseDay?, steps, expect}`.
-- `steps`: `{t, idle?, inCall?, inPhoneCall?, do?}`; `t` in seconds. Inputs hold
-  until the next step. `do` is `pause:<s>` or `cancelPause`, run before the update.
-- The runner calls `update` once per second from `start` to the last `expect`.
+- `steps`: `{t, idle?, inCall?, inPhoneCall?, do?}`; `t` in seconds. `idle` is
+  in seconds too (the runner multiplies by 1000 into `idleMs`). Inputs
+  persist from the latest step at or before the current second.
+- `do` is `pause:<s>` (seconds, times 1000) or `cancelPause`. It runs at that
+  second, before that second's `update`; its boolean is `pauseResult`.
+- Construct the scheduler as for traces: clock `start`*1000 (default 0), scale
+  1, the same dayKey on ms, `lastPauseDay` from the scenario (default null).
+- The runner calls `update` once per second, `t` from `start` to the last
+  `expect` (clock `t`*1000).
 - `expect`: `{t, phase, canPause?, pauseResult?}` checked after the update at `t`.
 
 ## traces.json (exact, milliseconds, arbitrary clock)

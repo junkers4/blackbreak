@@ -45,6 +45,7 @@ jobs:
       - run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends gnome-shell libglib2.0-bin
+      - run: glib-compile-schemas --strict --dry-run linux/blackbreak@junkers4.github.io/schemas
       - run: make -C linux pack VERSION="${{ needs.notes.outputs.version }}"
       - uses: actions/upload-artifact@v4
         with:
@@ -79,6 +80,8 @@ jobs:
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" out/* --clobber
+            gh release edit "$GITHUB_REF_NAME" \
+              --title "BlackBreak $GITHUB_REF_NAME" --notes-file notes.md
           else
             gh release create "$GITHUB_REF_NAME" out/* \
               --title "BlackBreak $GITHUB_REF_NAME" \
