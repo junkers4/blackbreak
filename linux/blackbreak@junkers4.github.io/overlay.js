@@ -40,10 +40,6 @@ export class Overlay {
         this._resize();
         this._grab = Main.pushModal(this._widget, {actionMode: Shell.ActionMode.NONE});
         this._updateCountdown();
-        this._tickId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
-            this._updateCountdown();
-            return GLib.SOURCE_CONTINUE;
-        });
     }
 
     hide() {
@@ -100,8 +96,18 @@ export class Overlay {
         }
     }
 
+    // Updated on each whole second left; hides itself at the end.
     _updateCountdown() {
-        const s = Math.max(0, Math.ceil((this._endsAt - Date.now()) / 1000));
-        this._countdown.text = String(s);
+        const left = this._endsAt - Date.now();
+        if (left <= 0) {
+            this.hide();
+            return;
+        }
+        this._countdown.text = String(Math.ceil(left / 1000));
+        this._tickId = GLib.timeout_add(GLib.PRIORITY_HIGH, left % 1000 || 1000, () => {
+            this._tickId = 0;
+            this._updateCountdown();
+            return GLib.SOURCE_REMOVE;
+        });
     }
 }

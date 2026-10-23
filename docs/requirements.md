@@ -12,8 +12,8 @@
 | REQ-008 | Pause up to 3 h, only in the work phase. | scenarios: pause 1h, pause too long, pause max, no pause in warning, no pause in break, idle ignored while paused; manual: pause | — | — |
 | REQ-009 | One pause per calendar day; survives restart. | scenarios: one per day, cancel uses the day, restart keeps the day; manual: pause | — | — |
 | REQ-010 | Cancelling a pause starts a fresh interval. | scenarios: cancel, cancel uses the day | — | — |
-| REQ-011 | Call exemption is off by default. | scenarios: call holds, call during warning ignored, call during break ignored | — | — |
+| REQ-011 | Call exemption is off by default. | scenarios: call holds, call during warning ignored, call during break ignored; manual: calls | — | — |
 | REQ-012 | A break waits for a call at most 3 h. | scenarios: call cap | — | — |
 | REQ-013 | A phone call always holds a due break (Android). | scenarios: phone call uncapped | — | — |
-| REQ-014 | Settings can be changed only in the work phase. | — | — | — |
+| REQ-014 | Settings can be changed only in the work phase. | manual: calls (switch during a break or a held break) | — | — |
 | REQ-015 | Clock jumps (suspend, backward step) count as rest. | unit: suspend in work, suspend in break, clock backward | — | — |

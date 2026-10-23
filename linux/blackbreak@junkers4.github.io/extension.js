@@ -2,22 +2,31 @@ import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import {Scheduler, Phase} from './scheduler.js';
+import {Scheduler, Phase, WARN_MS} from './scheduler.js';
+import {CallDetector} from './callDetect.js';
 import {Overlay} from './overlay.js';
 import {Notice} from './notice.js';
 import {Indicator} from './indicator.js';
 
 const FAST = GLib.getenv('BLACKBREAK_DEBUG_FAST') === '1';
 const STUCK = GLib.getenv('BLACKBREAK_DEBUG_STUCK') === '1';
+const SCALE = FAST ? 60 : 1;
+// Calls are watched from this long before the warning is due, and while held.
+const CALL_LEAD_MS = 60_000;
 
 export default class BlackBreakExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
         this._scheduler = new Scheduler(Date.now(), {
-            scale: FAST ? 60 : 1,
+            scale: SCALE,
             lastPauseDay: this._settings.get_string('last-pause-day') || null,
         });
         this._phase = null;
+        this._detector = new CallDetector(this._settings);
+        this._settingsDirty = false;
+        this._settingsId = this._settings.connect('changed', () => {
+            this._settingsDirty = true;
+        });
         this._overlay = new Overlay();
         this._notice = new Notice();
         this._indicator = new Indicator(this._scheduler,
@@ -40,6 +49,9 @@ export default class BlackBreakExtension extends Extension {
     disable() {
         GLib.source_remove(this._tickId);
         Main.sessionMode.disconnect(this._sessionId);
+        this._settings.disconnect(this._settingsId);
+        this._detector.destroy();
+        this._detector = null;
         this._overlay.destroy();
         this._notice.destroy();
         this._indicator.destroy();
@@ -50,11 +62,19 @@ export default class BlackBreakExtension extends Extension {
 
     _tick() {
         const s = this._scheduler;
+        const now = Date.now();
+        const due = s.nextBreakAt === null ? null : s.nextBreakAt - WARN_MS / SCALE;
+        // Settings take effect only in a normal work interval.
+        if (this._settingsDirty && s.phase === Phase.WORK && now < due) {
+            this._settingsDirty = false;
+            this._detector.snapshot();
+        }
+        const watch = s.phase === Phase.WORK && now >= due - CALL_LEAD_MS / SCALE;
         if (!(STUCK && s.phase === Phase.BREAK)) {
             s.update({
-                now: Date.now(),
+                now,
                 idleMs: global.backend.get_core_idle_monitor().get_idletime(),
-                inCall: false,
+                inCall: watch && this._detector.inCall(),
                 inPhoneCall: false,
             });
         }
@@ -66,7 +86,8 @@ export default class BlackBreakExtension extends Extension {
         } else if (s.phase === Phase.BREAK) {
             this._notice.hide();
             this._indicator.menu.close();
-            this._overlay.show(s.breakEndsAt);
+            // Stuck: a wrong end time, so only the fail-safe clears the screen.
+            this._overlay.show(STUCK ? Date.now() + 3_600_000 : s.breakEndsAt);
         } else {
             this._notice.hide();
             this._overlay.hide();
@@ -84,6 +105,7 @@ export default class BlackBreakExtension extends Extension {
         if (locked) {
             this._indicator.menu.close();
             this._overlay.hide();
+            this._notice.hide();
         }
         this._indicator.container.visible = !locked;
     }

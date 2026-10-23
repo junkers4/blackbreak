@@ -5,7 +5,11 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 // A small label at the top center of the primary monitor; no input.
 export class Notice {
     show(text) {
+        if (Main.sessionMode.isLocked)
+            return;
         if (!this._bin) {
+            // Drawn over fullscreen windows too, as Main.pushModal does.
+            global.compositor.disable_unredirect();
             this._label = new St.Label({
                 style_class: 'blackbreak-notice',
                 x_align: Clutter.ActorAlign.CENTER,
@@ -23,6 +27,8 @@ export class Notice {
     }
 
     hide() {
+        if (this._bin)
+            global.compositor.enable_unredirect();
         this._bin?.destroy();
         this._bin = this._label = null;
     }
