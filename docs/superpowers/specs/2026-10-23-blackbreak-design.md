@@ -204,3 +204,11 @@ Linux scheduler and reused by the others.
 Exact fonts and grey shades within "thin, light grey on black"; repo
 layout; license (proposed MIT); test frameworks per platform; how the
 shared scenario table is shaped.
+
+## Amendments (approved by owner 2026-10-23)
+
+- Windows: .NET 10 LTS with NativeAOT and plain Win32 instead of .NET 8 (.NET 8 support ends 2026-11-10; exe of a few MB).
+- Windows: the call settings are check items in the tray menu, not a dialog.
+- Android: no foreground service; the AccessibilityService owns the timer (no permanent notification, no battery-optimisation step).
+- Android: calls are detected from the audio mode only (VoIP and phone); no separate camera rule in v1.
+- Releases: SemVer tags `vX.Y.Z` — v0.1.0 Linux, v0.2.0 + Windows, v0.3.0 + Android, v1.0.0 after the manual checklists pass on real hardware.
