@@ -33,6 +33,7 @@ class BreakOverlay(private val context: Context, private val wm: WindowManager) 
         setTextColor(Color.parseColor("#7B756B"))
         textSize = 14f
     }
+    val view: View get() = root
     private val root = FrameLayout(context).apply {
         setBackgroundColor(Color.parseColor("#0D0C0B"))
         isClickable = true // consumes every touch

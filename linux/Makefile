@@ -1,9 +1,19 @@
 UUID := blackbreak@junkers4.github.io
 EXTRA := copy.js scheduler.js overlay.js notice.js indicator.js callDetect.js
 
-.PHONY: test pack install
+.PHONY: test test-detector test-headless test-all pack install
 test:
 	node --test test/*.test.mjs
+
+# gjs: the call detector (settings matrix, snapshot, camera scan)
+test-detector:
+	LD_LIBRARY_PATH=/usr/lib/gnome-shell GI_TYPELIB_PATH=/usr/lib/gnome-shell gjs -m test/detector.test.js
+
+# two isolated headless GNOME Shell sessions driven from outside (about 6 minutes)
+test-headless:
+	./test/headless.sh
+
+test-all: test test-detector test-headless
 
 VERSION ?= 0.0.0-dev
 ZIP := dist/blackbreak-linux-gnome-v$(VERSION).zip

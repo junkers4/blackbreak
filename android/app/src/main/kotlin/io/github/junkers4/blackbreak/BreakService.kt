@@ -38,7 +38,23 @@ class BreakService : AccessibilityService() {
     fun held(): Boolean = controller.held(System.currentTimeMillis())
 
     private val tickRunnable = Runnable { tick() }
-    private val failsafe = Runnable { breakOverlay.hide() }
+    private val failsafe = Runnable {
+        testBreakEndsAt = null
+        breakOverlay.hide()
+    }
+
+    // Tests only: a break shown on request, ended by its end time or the fail-safe.
+    private var testBreakEndsAt: Long? = null
+    val breakView: android.view.View get() = breakOverlay.view
+
+    /** Tests only: shows the break now until [endsAt], with the fail-safe at [failsafeAt]. */
+    fun showTestBreak(endsAt: Long, failsafeAt: Long) {
+        val now = System.currentTimeMillis()
+        testBreakEndsAt = endsAt
+        handler.removeCallbacks(failsafe)
+        handler.postDelayed(failsafe, (failsafeAt - now).coerceAtLeast(1))
+        breakOverlay.show((endsAt - now + 999) / 1000)
+    }
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -89,6 +105,13 @@ class BreakService : AccessibilityService() {
         val audio = (getSystemService(Context.AUDIO_SERVICE) as AudioManager).mode
         val show = controller.tick(now, 0, audio, exemption)
         if (show.notice) notice.show() else notice.hide()
+        val test = testBreakEndsAt
+        if (test != null && now < test) {
+            breakOverlay.update((test - now + 999) / 1000)
+            handler.postDelayed(tickRunnable, 1000)
+            return
+        }
+        testBreakEndsAt = null
         val ends = show.breakEndsAt
         if (ends != null) {
             if (!breakOverlay.shown) {
