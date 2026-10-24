@@ -41,6 +41,17 @@ Two copies of the exe keep each other alive: if one is killed, the other
 starts it again, and a break that was running continues for what was left
 of it. `Quit` in the tray menu stops both.
 
+## Install (Android 8 or newer)
+
+Download `blackbreak-android-vX.Y.Z.apk` from the latest release, allow
+installing from your browser when asked, open the app and choose
+`Turn on BlackBreak in Accessibility settings`. Android 13 and newer: if the
+switch is greyed out, open the app's info page, tap the three dots and
+choose "Allow restricted settings", then try again. The service reads no
+screen content; it only draws the black screen and blocks keys.
+
+A phone call always waits: the break never covers the dialer.
+
 ## Releases
 
 Builds are on the GitHub Releases page, each with a `SHA256SUMS` file
@@ -66,6 +77,8 @@ warning or a break take effect in the next work interval.
 On Windows: the Ctrl+Alt+Del screen, Win+L (locks the PC), signing out and the
 power button.
 
+On Android: the power button, Emergency SOS and a forced reboot.
+
 On Linux: switching to a text console (Ctrl+Alt+F3) and rebooting still work. If
 anything goes wrong, the break screen removes itself after 35 seconds.
 
@@ -75,7 +88,7 @@ anything goes wrong, the break screen removes itself after 35 seconds.
 |---|---|
 | Linux (GNOME) | available |
 | Windows | available |
-| Android | next |
+| Android | available |
 | iOS | later: needs a paid Apple developer account, a Mac and Apple's approval of the Screen Time entitlement |
 
 ## Development

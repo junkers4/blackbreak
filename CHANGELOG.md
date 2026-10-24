@@ -5,6 +5,14 @@ and versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-24
+
+Android 8 or newer.
+
+- An accessibility service covers the whole screen, bars included, for 30 seconds every 20 minutes and swallows touches and keys.
+- A phone call always waits, and the dialer is never covered.
+- Screen off for 5 minutes counts as rest.
+
 ## [0.2.0] - 2026-10-24
 
 Windows 10 and 11.
