@@ -56,6 +56,9 @@ jobs:
           $i = 0
           foreach ($line in $got) { if ($i -lt $want.Count -and $line -eq $want[$i]) { $i++ } }
           if ($i -lt $want.Count) { throw "smoke log lacks '$($want[$i])' in order" }
+      - name: Kill and fail-safe
+        shell: pwsh
+        run: ./windows/test/resilience.ps1 windows/out/BlackBreak.exe
       - uses: actions/upload-artifact@v4
         with:
           name: blackbreak-windows

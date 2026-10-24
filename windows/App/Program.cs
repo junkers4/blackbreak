@@ -28,6 +28,18 @@ internal static unsafe class Program
         _exe = Environment.ProcessPath ?? "";
         if (args.Length >= 2 && args[0] == "--watchdog")
             return Watchdog.Run(_exe, int.TryParse(args[1], out var pid) ? pid : 0, Dir);
+        // CI helpers: stand in for a crashed app that holds the break desktop, and report the input desktop.
+        if (args.Length >= 1 && args[0] == "--test-hold-desktop")
+        {
+            var d = Native.CreateDesktopW("BlackBreak", 0, 0, 0, Native.GENERIC_ALL, 0);
+            Native.SwitchDesktop(d);
+            Thread.Sleep(Timeout.Infinite);
+        }
+        if (args.Length >= 2 && args[0] == "--test-input-desktop")
+        {
+            File.WriteAllText(args[1], Native.InputDesktopName() ?? "(none)");
+            return 0;
+        }
         if (args.Length >= 2 && args[0] == "--smoke")
         {
             _smoke = true;
@@ -36,7 +48,10 @@ internal static unsafe class Program
         }
         using var mutex = _smoke ? null : new Mutex(true, "Local\\BlackBreak.App", out _);
         if (!_smoke && !mutex!.WaitOne(0)) return 0; // another copy is running
-        if (Environment.GetEnvironmentVariable("BLACKBREAK_DEBUG_FAST") == "1") _scale = 60;
+        // "1" means 60x; any other number is the factor itself.
+        var fast = Environment.GetEnvironmentVariable("BLACKBREAK_DEBUG_FAST");
+        if (fast == "1") _scale = 60;
+        else if (double.TryParse(fast, System.Globalization.CultureInfo.InvariantCulture, out var f) && f > 1) _scale = f;
 
         if (!_smoke) SetAutostart();
         _settings = _snapshot = Store.LoadSettings(Dir);
