@@ -6,6 +6,10 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -14,48 +18,56 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 
-private val LINES = listOf(
-    "Look at something far away — at least 6 m (20 ft).",
-    "Stretch your arms and your back.",
-    "Sit up straight, shoulders back.",
-    "Slowly turn and tilt your head to stretch your neck.",
-)
-
 private fun overlayParams(width: Int, height: Int, flags: Int) =
     WindowManager.LayoutParams(width, height, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, flags, PixelFormat.TRANSLUCENT)
 
 class BreakOverlay(private val context: Context, private val wm: WindowManager) {
+    private val slovak = java.util.Locale.getDefault().language == "sk"
+    private val cream = Color.parseColor("#ECE8E1")
+    private val accent = Color.parseColor("#C9B99A")
+    private val serif = Typeface.create("serif", Typeface.NORMAL)
+
+    private fun dp(v: Int) = (v * context.resources.displayMetrics.density).toInt()
+
     private val countdown = TextView(context).apply {
-        setTextColor(Color.parseColor("#5A5A5A"))
-        textSize = 15f
-        typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-        gravity = Gravity.CENTER
-        setPadding(0, dp(18), 0, 0)
+        setTextColor(Color.parseColor("#7B756B"))
+        textSize = 14f
     }
     private val root = FrameLayout(context).apply {
-        setBackgroundColor(Color.BLACK)
+        setBackgroundColor(Color.parseColor("#0D0C0B"))
         isClickable = true // consumes every touch
         isFocusable = false
+        val height = context.resources.displayMetrics.heightPixels
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(28), 0, dp(28), 0)
-            for (line in LINES) addView(TextView(context).apply {
-                text = line
-                setTextColor(Color.parseColor("#9A9A9A"))
-                textSize = 19f
-                typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-                gravity = Gravity.CENTER
-                setPadding(0, dp(7), 0, dp(7))
+            for (line in Copy.lines(slovak)) addView(TextView(context).apply {
+                typeface = serif
+                textSize = 27f
+                setTextColor(cream)
+                setLineSpacing(0f, 1.1f)
+                text = SpannableStringBuilder(line.plain).apply {
+                    if (line.accent.isNotEmpty()) {
+                        val start = length
+                        append(line.accent)
+                        setSpan(StyleSpan(Typeface.ITALIC), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        setSpan(ForegroundColorSpan(accent), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                }
             })
-            addView(countdown)
         }
-        addView(column, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        addView(column, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = height * 22 / 100
+            marginStart = dp(26)
+            marginEnd = dp(26)
+        })
+        addView(countdown, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            gravity = Gravity.BOTTOM or Gravity.START
+            marginStart = dp(26)
+            bottomMargin = height * 9 / 100
+        })
     }
     var shown = false
         private set
-
-    private fun dp(v: Int) = (v * context.resources.displayMetrics.density).toInt()
 
     fun show(secondsLeft: Long) {
         update(secondsLeft)
@@ -74,7 +86,7 @@ class BreakOverlay(private val context: Context, private val wm: WindowManager) 
     }
 
     fun update(secondsLeft: Long) {
-        countdown.text = secondsLeft.coerceAtLeast(0).toString()
+        countdown.text = Copy.seconds(slovak, secondsLeft.coerceAtLeast(0))
     }
 
     fun hide() {
@@ -87,13 +99,13 @@ class BreakOverlay(private val context: Context, private val wm: WindowManager) 
 class NoticeOverlay(private val context: Context, private val wm: WindowManager) {
     private val view = TextView(context).apply {
         text = "Break in 10 s"
-        setTextColor(Color.parseColor("#E6E6E6"))
+        setTextColor(Color.parseColor("#ECE8E1"))
         textSize = 15f
         gravity = Gravity.CENTER
         val pad = (context.resources.displayMetrics.density * 12).toInt()
         setPadding(pad * 2, pad, pad * 2, pad)
         background = GradientDrawable().apply {
-            setColor(Color.parseColor("#EB2B2B2B"))
+            setColor(Color.parseColor("#EB1F1D1A"))
             cornerRadius = 1000f
         }
     }

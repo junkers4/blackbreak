@@ -65,7 +65,7 @@ internal static unsafe partial class Native
     public static readonly nint HWND_TOPMOST = -1;
     public const uint GENERIC_ALL = 0x10000000, DESKTOP_SWITCHDESKTOP = 0x100, DESKTOP_READOBJECTS = 1;
     public const int WH_KEYBOARD_LL = 13, UOI_NAME = 2;
-    public const uint DT_CENTER = 1, DT_SINGLELINE = 0x20, DT_NOPREFIX = 0x800, DT_VCENTER = 4;
+    public const uint DT_CENTER = 1, DT_SINGLELINE = 0x20, DT_NOPREFIX = 0x800, DT_VCENTER = 4, DT_NOCLIP = 0x100;
     public const int TRANSPARENT = 1, BLACK_BRUSH = 4;
     public const uint LWA_ALPHA = 2;
     public const uint MF_STRING = 0, MF_GRAYED = 1, MF_CHECKED = 8, MF_SEPARATOR = 0x800;

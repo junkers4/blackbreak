@@ -6,14 +6,9 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {FAILSAFE_MS} from './scheduler.js';
 
-const LINES = [
-    'Look at something far away — at least 6 m (20 ft).',
-    'Stretch your arms and your back.',
-    'Sit up straight, shoulders back.',
-    'Slowly turn and tilt your head to stretch your neck.',
-];
+import {LINES, markup, seconds} from './copy.js';
 
-// The break screen: black over the whole stage, with a modal grab.
+// The break screen: warm black over the whole stage, with a modal grab.
 export class Overlay {
     show(endsAtMs) {
         if (this._widget || Main.sessionMode.isLocked)
@@ -30,10 +25,7 @@ export class Overlay {
             reactive: true,
             can_focus: true,
         });
-        this._box = new St.Bin({
-            child: this._buildText(),
-        });
-        this._widget.add_child(this._box);
+        this._buildText();
         Main.layoutManager.addTopChrome(this._widget);
         this._monitorsId = Main.layoutManager.connect('monitors-changed',
             () => this._resize());
@@ -59,7 +51,7 @@ export class Overlay {
         }
         this._grab = null;
         this._widget?.destroy();
-        this._widget = this._box = this._countdown = null;
+        this._widget = this._text = this._countdown = null;
     }
 
     destroy() {
@@ -67,33 +59,34 @@ export class Overlay {
     }
 
     _buildText() {
-        const box = new St.BoxLayout({
+        this._text = new St.BoxLayout({
             style_class: 'blackbreak-text',
             orientation: Clutter.Orientation.VERTICAL,
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
-            x_expand: true,
-            y_expand: true,
         });
-        for (const text of LINES)
-            box.add_child(new St.Label({style_class: 'blackbreak-line', text}));
-        this._countdown = new St.Label({
-            style_class: 'blackbreak-countdown',
-            x_align: Clutter.ActorAlign.CENTER,
-        });
-        box.add_child(this._countdown);
-        return box;
+        for (const line of LINES) {
+            const label = new St.Label({style_class: 'blackbreak-line'});
+            label.clutter_text.set_markup(markup(line));
+            this._text.add_child(label);
+        }
+        this._countdown = new St.Label({style_class: 'blackbreak-countdown'});
+        this._widget.add_child(this._text);
+        this._widget.add_child(this._countdown);
     }
 
     _resize() {
         this._widget.set_position(0, 0);
         this._widget.set_size(global.stage.width, global.stage.height);
-        // The text sits in the middle of the primary monitor.
+        // The words sit on the left of the primary monitor, sized by its height.
         const m = Main.layoutManager.primaryMonitor;
-        if (m) {
-            this._box.set_position(m.x, m.y);
-            this._box.set_size(m.width, m.height);
-        }
+        if (!m)
+            return;
+        const px = Math.max(24, Math.round(m.height / 17));
+        const left = m.x + Math.round(m.width * 0.1);
+        this._text.set_style(`font-size: ${px}px; spacing: ${Math.round(px * 0.18)}px;`);
+        this._text.set_position(left, m.y + Math.round(m.height * 0.22));
+        this._text.set_width(Math.round(m.width * 0.8));
+        this._countdown.set_style(`font-size: ${Math.max(14, Math.round(px * 0.5))}px;`);
+        this._countdown.set_position(left, m.y + m.height - Math.round(m.height * 0.09));
     }
 
     // Updated on each whole second left; hides itself at the end.
@@ -103,7 +96,7 @@ export class Overlay {
             this.hide();
             return;
         }
-        this._countdown.text = String(Math.ceil(left / 1000));
+        this._countdown.text = seconds(Math.ceil(left / 1000));
         this._tickId = GLib.timeout_add(GLib.PRIORITY_HIGH, left % 1000 || 1000, () => {
             this._tickId = 0;
             this._updateCountdown();

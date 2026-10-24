@@ -6,12 +6,12 @@ over. Other break tools let you skip or postpone a break when it arrives,
 so in practice it gets skipped. BlackBreak has no skip button: you decide
 in advance, never in the moment.
 
-During a break the screen says:
+During a break the screen is warm black with three plain lines, in English
+or Slovak by your system language, and the seconds left in the corner:
 
-    Look at something far away — at least 6 m (20 ft).
-    Stretch your arms and your back.
-    Sit up straight, shoulders back.
-    Slowly turn and tilt your head to stretch your neck.
+    Rest your eyes.
+    Look out of the window, as far as you can.
+    Then stretch.
 
 Ten seconds before a break a small notice says `Break in 10 s`. If you
 have been idle for 5 minutes, that counts as rest and the 20 minutes

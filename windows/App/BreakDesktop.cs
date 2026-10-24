@@ -8,14 +8,6 @@ namespace BlackBreak;
 internal sealed unsafe class BreakDesktop : IDisposable
 {
     const string ClassName = "BlackBreak.Break", DesktopName = "BlackBreak";
-    static readonly string[] Lines =
-    {
-        "Look at something far away — at least 6 m (20 ft).",
-        "Stretch your arms and your back.",
-        "Sit up straight, shoulders back.",
-        "Slowly turn and tilt your head to stretch your neck.",
-    };
-
     // The window procedure is static, and only one break is ever shown.
     static BreakDesktop? _cur;
     static List<(RECT rect, bool primary)>? _monitors;
@@ -26,7 +18,7 @@ internal sealed unsafe class BreakDesktop : IDisposable
     Thread? _thread;
     volatile uint _tid;
     long _endsAt, _failsafeAt, _lastSec = -1;
-    nint _desk, _ctl, _primary, _hook, _fontLine, _fontCount;
+    nint _desk, _ctl, _primary, _hook, _fontLine, _fontItalic, _fontCount, _bg;
     int _primaryHeight;
 
     public BreakDesktop(Action<string>? log = null) => _log = log;
@@ -66,7 +58,7 @@ internal sealed unsafe class BreakDesktop : IDisposable
             _desk = Native.CreateDesktopW(DesktopName, 0, 0, 0, Native.GENERIC_ALL, 0);
             if (_desk == 0 || Native.SetThreadDesktop(_desk) == 0) return;
             Native.RegisterClass(ClassName, (nint)(delegate* unmanaged<nint, uint, nint, nint, nint>)&WndProc,
-                Native.GetStockObject(Native.BLACK_BRUSH));
+                _bg = Native.CreateSolidBrush(Native.Rgb(0x0D, 0x0C, 0x0B)));
             _ctl = Native.CreateWindowExW(Native.WS_EX_TOOLWINDOW, ClassName, null, Native.WS_POPUP, 0, 0, 1, 1, 0, 0, Native.Instance, 0);
             BuildWindows();
             switched = Native.SwitchDesktop(_desk) != 0;
@@ -91,13 +83,15 @@ internal sealed unsafe class BreakDesktop : IDisposable
             _wins.Clear();
             if (_ctl != 0) Native.DestroyWindow(_ctl);
             if (_fontLine != 0) Native.DeleteObject(_fontLine);
+            if (_fontItalic != 0) Native.DeleteObject(_fontItalic);
             if (_fontCount != 0) Native.DeleteObject(_fontCount);
+            if (_bg != 0) Native.DeleteObject(_bg);
             if (_desk != 0)
             {
                 Native.SetThreadDesktop(orig);
                 Native.CloseDesktop(_desk);
             }
-            _hook = _ctl = _primary = _desk = _fontLine = _fontCount = 0;
+            _hook = _ctl = _primary = _desk = _fontLine = _fontItalic = _fontCount = _bg = 0;
         }
     }
 
@@ -127,10 +121,12 @@ internal sealed unsafe class BreakDesktop : IDisposable
         }
         if (_primary == 0 && _wins.Count > 0) _primary = _wins[0];
         if (_fontLine != 0) Native.DeleteObject(_fontLine);
+        if (_fontItalic != 0) Native.DeleteObject(_fontItalic);
         if (_fontCount != 0) Native.DeleteObject(_fontCount);
-        var px = Math.Max(18, _primaryHeight / 30);
-        _fontLine = Native.CreateFontW(-px, 0, 0, 0, 300, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI Light");
-        _fontCount = Native.CreateFontW(-px * 4 / 5, 0, 0, 0, 300, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI Light");
+        var px = Math.Max(24, _primaryHeight / 17);
+        _fontLine = Native.CreateFontW(-px, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Georgia");
+        _fontItalic = Native.CreateFontW(-px, 0, 0, 0, 400, 1, 0, 0, 1, 0, 0, 5, 0, "Georgia");
+        _fontCount = Native.CreateFontW(-Math.Max(14, px / 2), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
     }
 
     void Paint(nint hwnd)
@@ -139,27 +135,40 @@ internal sealed unsafe class BreakDesktop : IDisposable
         var dc = Native.BeginPaint(hwnd, &ps);
         RECT r;
         Native.GetClientRect(hwnd, &r);
-        Native.FillRect(dc, &r, Native.GetStockObject(Native.BLACK_BRUSH));
+        Native.FillRect(dc, &r, _bg);
         if (hwnd == _primary)
         {
             Native.SetBkMode(dc, Native.TRANSPARENT);
-            var px = Math.Max(18, r.Bottom / 30);
-            var lh = px * 17 / 10;
-            var top = (r.Bottom - (Lines.Length * lh + lh * 2)) / 2;
-            var old = Native.SelectObject(dc, _fontLine);
-            Native.SetTextColor(dc, Native.Rgb(0x9A, 0x9A, 0x9A));
-            for (var i = 0; i < Lines.Length; i++)
+            var px = Math.Max(24, r.Bottom / 17);
+            var lh = px * 12 / 10;
+            var left = r.Right / 10;
+            var top = r.Bottom * 22 / 100;
+            for (var i = 0; i < Copy.Lines.Length; i++)
             {
-                var line = new RECT { Left = r.Left, Right = r.Right, Top = top + i * lh, Bottom = top + (i + 1) * lh };
-                Native.DrawTextW(dc, Lines[i], Lines[i].Length, &line, Native.DT_CENTER | Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_VCENTER);
+                var (plain, accent) = Copy.Lines[i];
+                var y = top + i * lh;
+                var x = left;
+                var old = Native.SelectObject(dc, _fontLine);
+                Native.SetTextColor(dc, Native.Rgb(0xEC, 0xE8, 0xE1));
+                var line = new RECT { Left = x, Top = y, Right = r.Right, Bottom = y + lh };
+                Native.DrawTextW(dc, plain, plain.Length, &line, Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_NOCLIP);
+                if (accent.Length > 0)
+                {
+                    SIZE size;
+                    Native.GetTextExtentPoint32W(dc, plain, plain.Length, &size);
+                    Native.SelectObject(dc, _fontItalic);
+                    Native.SetTextColor(dc, Native.Rgb(0xC9, 0xB9, 0x9A));
+                    line.Left = x + size.Cx;
+                    Native.DrawTextW(dc, accent, accent.Length, &line, Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_NOCLIP);
+                }
+                Native.SelectObject(dc, old);
             }
-            Native.SelectObject(dc, _fontCount);
-            Native.SetTextColor(dc, Native.Rgb(0x5A, 0x5A, 0x5A));
-            var sec = Math.Max(0, (_endsAt - Native.UnixNow() + 999) / 1000);
-            var cd = sec.ToString();
-            var rc = new RECT { Left = r.Left, Right = r.Right, Top = top + Lines.Length * lh + lh / 2, Bottom = top + (Lines.Length + 2) * lh };
-            Native.DrawTextW(dc, cd, cd.Length, &rc, Native.DT_CENTER | Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_VCENTER);
-            Native.SelectObject(dc, old);
+            var oldCount = Native.SelectObject(dc, _fontCount);
+            Native.SetTextColor(dc, Native.Rgb(0x7B, 0x75, 0x6B));
+            var cd = Copy.Seconds(Math.Max(0, (_endsAt - Native.UnixNow() + 999) / 1000));
+            var rc = new RECT { Left = left, Top = r.Bottom - r.Bottom * 12 / 100, Right = r.Right, Bottom = r.Bottom };
+            Native.DrawTextW(dc, cd, cd.Length, &rc, Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_NOCLIP);
+            Native.SelectObject(dc, oldCount);
         }
         Native.EndPaint(hwnd, &ps);
     }

@@ -6,7 +6,7 @@ off and on. Real timings: release build, or no property.
 
 ## Break screen
 - [ ] The break covers the status bar and the navigation bar; solid black, also around a camera cutout.
-- [ ] The four lines are light grey, centered; the countdown is dimmer under them.
+- [ ] The three lines are cream on warm black, left aligned, the middle one with an italic tan ending; the seconds left are in the bottom left corner.
 - [ ] The break ends after 30 s.
 - [ ] Rotating the phone, or folding it, during a break keeps everything covered.
 

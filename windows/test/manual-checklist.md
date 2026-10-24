@@ -5,8 +5,7 @@ Fast runs: set `BLACKBREAK_DEBUG_FAST=1` before starting `BlackBreak.exe`
 
 ## Break screen
 - [ ] The break covers every monitor and the taskbar; solid black.
-- [ ] The four lines are light grey, centered on the primary monitor.
-- [ ] The countdown counts down under them, dimmer.
+- [ ] The three lines are cream on warm black, left aligned, the middle one with an italic tan ending; the seconds left are in the bottom left corner.
 - [ ] The break ends after 30 s and the normal desktop is back.
 
 ## No input

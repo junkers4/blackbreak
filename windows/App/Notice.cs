@@ -18,7 +18,7 @@ internal sealed unsafe class Notice : IDisposable
         _text = text;
         if (!_registered)
         {
-            Native.RegisterClass(ClassName, (nint)(delegate* unmanaged<nint, uint, nint, nint, nint>)&WndProc, Native.CreateSolidBrush(Native.Rgb(0x2B, 0x2B, 0x2B)));
+            Native.RegisterClass(ClassName, (nint)(delegate* unmanaged<nint, uint, nint, nint, nint>)&WndProc, Native.CreateSolidBrush(Native.Rgb(0x1F, 0x1D, 0x1A)));
             _registered = true;
         }
         var scale = Native.GetDpiForSystem() / 96.0;
@@ -65,7 +65,7 @@ internal sealed unsafe class Notice : IDisposable
         RECT r;
         Native.GetClientRect(hwnd, &r);
         Native.SetBkMode(dc, Native.TRANSPARENT);
-        Native.SetTextColor(dc, Native.Rgb(0xE6, 0xE6, 0xE6));
+        Native.SetTextColor(dc, Native.Rgb(0xEC, 0xE8, 0xE1));
         var old = Native.SelectObject(dc, _font);
         Native.DrawTextW(dc, _text, _text.Length, &r, Native.DT_CENTER | Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_VCENTER);
         Native.SelectObject(dc, old);

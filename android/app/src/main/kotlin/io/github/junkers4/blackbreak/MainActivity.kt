@@ -5,7 +5,9 @@ import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -40,48 +42,96 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         val d = resources.displayMetrics.density
         fun dp(v: Int) = (v * d).toInt()
+        val night = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val page = Color.parseColor(if (night) "#0D0C0B" else "#FAF7F2")
+        val surface = Color.parseColor(if (night) "#1F1D1A" else "#EFE9DF")
+        val ink = Color.parseColor(if (night) "#ECE8E1" else "#1D1B18")
+        val muted = Color.parseColor(if (night) "#9A9488" else "#6F695E")
+        val serif = Typeface.create("serif", Typeface.NORMAL)
+
+        fun card(): LinearLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(18), dp(20), dp(18))
+            background = GradientDrawable().apply {
+                setColor(surface)
+                cornerRadius = dp(28).toFloat()
+            }
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) }
+        }
+        fun pill(label: String, onClick: () -> Unit) = Button(this).apply {
+            text = label
+            isAllCaps = false
+            setTextColor(ink)
+            stateListAnimator = null
+            background = GradientDrawable().apply {
+                setColor(if (night) Color.parseColor("#2B2824") else Color.parseColor("#E2DACB"))
+                cornerRadius = dp(24).toFloat()
+            }
+            setOnClickListener { onClick() }
+        }
+
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(32), dp(24), dp(24))
+            setPadding(dp(16), dp(48), dp(16), dp(24))
         }
+        column.addView(TextView(this).apply {
+            text = "BlackBreak"
+            textSize = 34f
+            typeface = serif
+            setTextColor(ink)
+            setPadding(dp(8), 0, 0, dp(20))
+        })
+
+        val statusCard = card()
         status = TextView(this).apply {
             textSize = 24f
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-            setPadding(0, 0, 0, dp(20))
+            typeface = serif
+            setTextColor(ink)
         }
-        column.addView(status)
-        setup = Button(this).apply {
-            text = "Turn on BlackBreak in Accessibility settings"
-            setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+        statusCard.addView(status)
+        setup = pill("Turn on BlackBreak in Accessibility settings") {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
-        column.addView(setup)
+        statusCard.addView(setup, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+        column.addView(statusCard)
+
+        val pauseCard = card()
+        pauseCard.addView(TextView(this).apply {
+            text = "One pause per day"
+            textSize = 13f
+            setTextColor(muted)
+            setPadding(0, 0, 0, dp(8))
+        })
         pauses = listOf("Pause 30 min" to 30, "Pause 1 hour" to 60, "Pause 2 hours" to 120, "Pause 3 hours" to 180).map { (label, min) ->
-            min to Button(this).apply {
-                text = label
-                setOnClickListener { BreakService.instance?.pause(min); refresh() }
-            }
+            min to pill(label) { BreakService.instance?.pause(min); refresh() }
         }
-        pauses.forEach { column.addView(it.second) }
-        cancel = Button(this).apply {
-            text = "Cancel pause"
-            setOnClickListener { BreakService.instance?.cancelPause(); refresh() }
-        }
-        column.addView(cancel)
+        pauses.forEach { pauseCard.addView(it.second, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) }) }
+        cancel = pill("Cancel pause") { BreakService.instance?.cancelPause(); refresh() }
+        pauseCard.addView(cancel, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+        column.addView(pauseCard)
+
+        val callCard = card()
         callSwitch = Switch(this).apply {
             text = "Wait with the break while I'm in a call"
-            setPadding(0, dp(24), 0, 0)
+            setTextColor(ink)
             setOnCheckedChangeListener { _, on ->
                 if (!updatingSwitch) getSharedPreferences(BreakService.PREFS, Context.MODE_PRIVATE)
                     .edit().putBoolean(BreakService.PREF_CALL_EXEMPTION, on).apply()
             }
         }
-        column.addView(callSwitch)
-        column.addView(TextView(this).apply {
+        callCard.addView(callSwitch)
+        callCard.addView(TextView(this).apply {
             text = "A break waits at most 3 hours. Phone calls always wait."
             textSize = 13f
-            setPadding(0, dp(4), 0, 0)
+            setTextColor(muted)
+            setPadding(0, dp(6), 0, 0)
         })
-        setContentView(ScrollView(this).apply { addView(column) })
+        column.addView(callCard)
+        setContentView(ScrollView(this).apply {
+            setBackgroundColor(page)
+            addView(column)
+        })
     }
 
     override fun onResume() {

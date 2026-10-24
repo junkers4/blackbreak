@@ -10,6 +10,7 @@ import {Indicator} from './indicator.js';
 
 const FAST = GLib.getenv('BLACKBREAK_DEBUG_FAST') === '1';
 const STUCK = GLib.getenv('BLACKBREAK_DEBUG_STUCK') === '1';
+const NO_IDLE = GLib.getenv('BLACKBREAK_DEBUG_NOIDLE') === '1'; // a headless test session has no input
 const SCALE = FAST ? 60 : 1;
 // Calls are watched from this long before the warning is due, and while held.
 const CALL_LEAD_MS = 60_000;
@@ -73,7 +74,7 @@ export default class BlackBreakExtension extends Extension {
         if (!(STUCK && s.phase === Phase.BREAK)) {
             s.update({
                 now,
-                idleMs: global.backend.get_core_idle_monitor().get_idletime(),
+                idleMs: NO_IDLE ? 0 : global.backend.get_core_idle_monitor().get_idletime(),
                 inCall: watch && this._detector.inCall(),
                 inPhoneCall: false,
             });
