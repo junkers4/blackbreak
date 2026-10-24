@@ -40,7 +40,7 @@ internal static unsafe class Program
             using var preview = new BreakDesktop(null, preview: true);
             var now0 = Native.UnixNow();
             preview.Show(now0 + long.Parse(args[1]) * 1000, now0 + 60_000);
-            Thread.Sleep(long.Parse(args[1]) * 1000 + 500);
+            Thread.Sleep(int.Parse(args[1]) * 1000 + 500);
             return 0;
         }
         if (args.Length >= 2 && args[0] == "--test-input-desktop")
