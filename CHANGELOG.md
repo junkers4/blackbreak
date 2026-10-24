@@ -5,6 +5,15 @@ and versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-24
+
+Windows 10 and 11.
+
+- Tray app with the same break, warning, pause and call rules as Linux.
+- The break runs on its own Windows desktop, so Win, Alt+Tab and the taskbar do nothing.
+- A watchdog copy relaunches a killed app and always gets the desktop back after 35 seconds.
+- Starts with Windows.
+
 ## [0.1.0] - 2026-10-23
 
 First release, for Linux (GNOME 50, Wayland).

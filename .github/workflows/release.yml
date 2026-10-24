@@ -53,8 +53,29 @@ jobs:
           path: linux/dist/blackbreak-linux-gnome-v*.zip
           if-no-files-found: error
 
+  windows:
+    needs: notes
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet test windows/Core.Tests
+      - run: dotnet publish windows/App -c Release -r win-x64 -p:PublishAot=true -p:Version=${{ needs.notes.outputs.version }} -o windows/out
+      - name: Zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path windows/out/BlackBreak.exe, README.md, LICENSE -DestinationPath "dist/blackbreak-windows-x64-v${{ needs.notes.outputs.version }}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: dist/blackbreak-windows-x64-v*.zip
+          if-no-files-found: error
+
   publish:
-    needs: [notes, linux]
+    needs: [notes, linux, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write

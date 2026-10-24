@@ -30,6 +30,17 @@ Log out and back in, then:
 
 From a checkout, `make -C linux install` does the same.
 
+## Install (Windows 10 and 11)
+
+Download `blackbreak-windows-x64-vX.Y.Z.zip` from the latest release, unzip
+it anywhere and run `BlackBreak.exe` once. It puts an icon in the tray and
+starts with Windows from then on. SmartScreen will warn, because the exe is
+unsigned: choose "More info", then "Run anyway".
+
+Two copies of the exe keep each other alive: if one is killed, the other
+starts it again, and a break that was running continues for what was left
+of it. `Quit` in the tray menu stops both.
+
 ## Releases
 
 Builds are on the GitHub Releases page, each with a `SHA256SUMS` file
@@ -52,7 +63,10 @@ warning or a break take effect in the next work interval.
 
 ## What it cannot block
 
-Switching to a text console (Ctrl+Alt+F3) and rebooting still work. If
+On Windows: the Ctrl+Alt+Del screen, Win+L (locks the PC), signing out and the
+power button.
+
+On Linux: switching to a text console (Ctrl+Alt+F3) and rebooting still work. If
 anything goes wrong, the break screen removes itself after 35 seconds.
 
 ## Platforms
@@ -60,7 +74,7 @@ anything goes wrong, the break screen removes itself after 35 seconds.
 | Platform | Status |
 |---|---|
 | Linux (GNOME) | available |
-| Windows | next |
+| Windows | available |
 | Android | next |
 | iOS | later: needs a paid Apple developer account, a Mac and Apple's approval of the Screen Time entitlement |
 

@@ -28,3 +28,35 @@ jobs:
         with:
           name: blackbreak-gnome
           path: linux/dist/*.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet test windows/Core.Tests
+      - run: dotnet publish windows/App -c Release -r win-x64 -p:PublishAot=true -p:Version=0.0.0 -o windows/out
+      - name: Size
+        shell: pwsh
+        run: |
+          $size = (Get-Item windows/out/BlackBreak.exe).Length
+          "BlackBreak.exe is $size bytes"
+          if ($size -gt 15MB) { throw "exe larger than 15 MB" }
+      - name: Smoke
+        shell: pwsh
+        env:
+          BLACKBREAK_DEBUG_FAST: "1"
+        run: |
+          $p = Start-Process -FilePath windows/out/BlackBreak.exe -ArgumentList '--smoke','45','smoke.log' -PassThru -Wait
+          Get-Content smoke.log
+          $want = 'phase warning','phase break','desktop switched','desktop restored','phase work'
+          $got = Get-Content smoke.log
+          $i = 0
+          foreach ($line in $got) { if ($i -lt $want.Count -and $line -eq $want[$i]) { $i++ } }
+          if ($i -lt $want.Count) { throw "smoke log lacks '$($want[$i])' in order" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blackbreak-windows
+          path: windows/out/BlackBreak.exe
