@@ -8,12 +8,13 @@ How to run:
 
 | suite | what | where it runs |
 |---|---|---|
-| **S** shared scenarios + traces | `spec/*.json` against each scheduler | Linux `make -C linux test`, Windows `dotnet test windows/Core.Tests`, Android `./gradlew :core:test`; all in CI |
+| **S** shared scenarios + traces | `spec/*.json` against each scheduler: the JS one (Linux) and the two assembler cores, x86-64 (Windows) and AArch64 (Android) | `make -C linux test`; `make -C core test` (the AArch64 core under qemu-aarch64); `dotnet test windows/Core.Tests` runs them again through the C# layer over the x86-64 core; all in CI |
+| **C** assembler core units | `core/test/run_core.py`: menu rule, call rule, time zone, seconds text; on AArch64 also the Android controller (warning, break, phone call, VoIP, screen off) | `make -C core test`; CI `core-asm` |
 | **LD** Linux detector | `make -C linux test-detector` (gjs) | locally; CI `gnome-pack` |
 | **LH** Linux headless | `make -C linux test-headless`: two isolated GNOME Shell 50 sessions, two virtual monitors, synthetic keyboard and mouse, real PipeWire | locally (needs GNOME Shell 50) |
 | **WU** Windows unit | `dotnet test windows/Core.Tests` (Menu, CallSettings, Copy, Store, BreakResume, CallUsage) | everywhere; CI |
 | **WE** Windows end-to-end | `windows/test/e2e.ps1` on a real Windows session: synthetic keys and clicks, registry, screenshots | CI `windows` (windows-latest) |
-| **AU** Android unit | `./gradlew :app:testDebugUnitTest` (BreakController, Copy) | everywhere; CI |
+| **AU** Android controller | the controller cases in **C** (they run against the AArch64 assembler; `:app:testDebugUnitTest` keeps only the text lines) | `make -C core test-aarch64`; CI |
 | **AI** Android instrumented | `./gradlew :app:connectedDebugAndroidTest` on a device | a connected phone (Pixel 9a, Android 17) |
 
 ## Timing
