@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace BlackBreak.Core;
 
-public sealed record Settings(bool CallExemption = false, bool ExemptMic = true, bool ExemptCamera = true, string? LastPauseDay = null);
+public sealed record Settings(bool CallExemption = false, bool ExemptMic = true, bool ExemptCamera = true, long? LastPauseDay = null);
 
 public sealed record BreakState(long? BreakStartMs, long BootMs);
 

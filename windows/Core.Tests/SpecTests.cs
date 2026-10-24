@@ -15,7 +15,7 @@ static class Spec
     public static JsonElement Find(string file, string name) =>
         Load(file).EnumerateArray().First(e => e.GetProperty("name").GetString() == name);
 
-    public static string DayKey(long ms) => Math.Floor(ms / 86_400_000.0).ToString("0");
+    public static long? Day(string? s) => s is null ? null : long.Parse(s);
 
     public static bool Has(JsonElement e, string k) => e.TryGetProperty(k, out _);
     public static long Long(JsonElement e, string k, long d = 0) => e.TryGetProperty(k, out var v) && v.ValueKind != JsonValueKind.Null ? v.GetInt64() : d;
@@ -34,7 +34,7 @@ public class ScenarioTests
     {
         var sc = Spec.Find("scenarios.json", name);
         long startS = Spec.Long(sc, "start");
-        var s = new Scheduler(startS * 1000, 1, Spec.DayKey, Spec.Str(sc, "lastPauseDay"));
+        var s = new Scheduler(startS * 1000, 1, Spec.Day(Spec.Str(sc, "lastPauseDay")));
         var steps = sc.GetProperty("steps").EnumerateArray().ToList();
         var expects = sc.GetProperty("expect").EnumerateArray().ToList();
         long maxT = expects.Max(e => e.GetProperty("t").GetInt64());
@@ -78,7 +78,7 @@ public class TraceTests
         var tr = Spec.Find("traces.json", name);
         long start = Spec.Long(tr, "start");
         var s = new Scheduler(start, tr.TryGetProperty("scale", out var sv) ? sv.GetDouble() : 1,
-            Spec.DayKey, Spec.Str(tr, "lastPauseDay"));
+            Spec.Day(Spec.Str(tr, "lastPauseDay")));
         long last = start;
         bool? result = null;
         void Update(long now, long idle = 0, bool call = false, bool phone = false)
@@ -122,7 +122,7 @@ public class TraceTests
                     case "result":
                         Assert.True(result is not null, $"{w}: no do yet");
                         Assert.True(v.GetBoolean() == result, m); break;
-                    case "lastPauseDay": Assert.Equal(v.ValueKind == JsonValueKind.Null ? null : v.GetString(), s.LastPauseDay, StringComparer.Ordinal); break;
+                    case "lastPauseDay": Assert.Equal(Spec.Day(v.ValueKind == JsonValueKind.Null ? null : v.GetString()), s.LastPauseDay); break;
                     case "nextBreakAt": Assert.Equal(L(v), s.NextBreakAt); break;
                     case "breakEndsAt": Assert.Equal(L(v), s.BreakEndsAt); break;
                     case "warningEndsAt": Assert.Equal(L(v), s.WarningEndsAt); break;

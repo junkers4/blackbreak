@@ -8,10 +8,11 @@ public static class Copy
         ? [("Odlož oči.", ""), ("Pozri von oknom, ", "čo najďalej."), ("Potom sa natiahni.", "")]
         : [("Rest your eyes.", ""), ("Look out of the window, ", "as far as you can."), ("Then stretch.", "")];
 
-    public static string Seconds(bool slovak, long n)
+    /// "N seconds" / "N sekúnd", from the core (bb_seconds).
+    public static unsafe string Seconds(bool slovak, long n)
     {
-        if (!slovak) return n == 1 ? "1 second" : $"{n} seconds";
-        if (n == 1) return "1 sekunda";
-        return n is >= 2 and <= 4 ? $"{n} sekundy" : $"{n} sekúnd";
+        var buf = stackalloc byte[64];
+        var len = CoreNative.bb_seconds(buf, n, slovak ? 1 : 0);
+        return System.Text.Encoding.UTF8.GetString(buf, (int)len);
     }
 }

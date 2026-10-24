@@ -16,6 +16,11 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <Version>0.0.0</Version>
   </PropertyGroup>
+  <!-- the assembler core (core/x86_64/core.S), linked into the exe: make -C core windows, or clang -c on Windows -->
+  <ItemGroup>
+    <DirectPInvoke Include="blackbreak_core" />
+    <NativeLibrary Include="$(MSBuildThisFileDirectory)../../core/build/blackbreak_core.obj" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\BlackBreak.Core.csproj" />
   </ItemGroup>

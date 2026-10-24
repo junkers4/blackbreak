@@ -7,9 +7,10 @@ public static class CallUsage
         entries.Any(e => e.start > 0 && e.stop == 0
             && !string.Equals(e.app, selfExe, StringComparison.OrdinalIgnoreCase));
 
-    /// The call rule with the settings: false when the exemption is off; otherwise the microphone
+    /// The call rule with the settings (the core's bb_in_call): false when the exemption is off; otherwise the microphone
     /// counts when exemptMic is on and the camera when exemptCamera is on.
     public static bool InCall(Settings s, IEnumerable<(string app, long start, long stop)> mic,
         IEnumerable<(string app, long start, long stop)> camera, string selfExe) =>
-        s.CallExemption && ((s.ExemptMic && InUse(mic, selfExe)) || (s.ExemptCamera && InUse(camera, selfExe)));
+        CoreNative.bb_in_call((s.CallExemption ? 1 : 0) | (s.ExemptMic ? 2 : 0) | (s.ExemptCamera ? 4 : 0),
+            InUse(mic, selfExe) ? 1 : 0, InUse(camera, selfExe) ? 1 : 0) == 1;
 }

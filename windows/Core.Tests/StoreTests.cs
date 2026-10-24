@@ -13,7 +13,7 @@ public class StoreTests
         var d = Tmp();
         try
         {
-            var s = new Settings(true, false, false, "20000");
+            var s = new Settings(true, false, false, 20000);
             Store.Save(d, s);
             Assert.Equal(s, Store.LoadSettings(d));
             var b = new BreakState(123, 456);

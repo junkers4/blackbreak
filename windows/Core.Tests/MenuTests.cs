@@ -11,7 +11,7 @@ public class MenuTests
 
     static Scheduler At(Phase want)
     {
-        var s = new Scheduler(0, 1, Spec.DayKey);
+        var s = new Scheduler(0, 1);
         switch (want)
         {
             case Phase.Warning: Walk(s, 1_195_000); break;

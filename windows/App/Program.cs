@@ -67,7 +67,7 @@ internal static unsafe class Program
         _settings = _snapshot = Store.LoadSettings(Dir);
         var now = Native.UnixNow();
         _bootMs = now - Environment.TickCount64;
-        _sch = new Scheduler(now, _scale, lastPauseDay: _settings.LastPauseDay);
+        _sch = new Scheduler(now, _scale, _settings.LastPauseDay, TzOffset(now));
         _notice = new Notice();
         _desk = new BreakDesktop(_smoke ? Log : null);
 
@@ -127,6 +127,7 @@ internal static unsafe class Program
             Quit();
             return;
         }
+        _sch.SetTimeZone(TzOffset(now)); // day numbers follow the local day, summer time too
         if (_phase == Phase.Work) _snapshot = _settings; // settings take effect in the next work interval
         // The call state matters from 60 s before the warning is due, and while a call holds the break.
         var inCall = false;
@@ -165,6 +166,9 @@ internal static unsafe class Program
         Tray.Remove(_hwnd);
         Native.PostQuitMessage(0);
     }
+
+    static long TzOffset(long ms) =>
+        (long)TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.FromUnixTimeMilliseconds(ms)).TotalMilliseconds;
 
     static string Clock(long ms) => DateTimeOffset.FromUnixTimeMilliseconds(ms).ToLocalTime().ToString("HH:mm");
 

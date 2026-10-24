@@ -18,9 +18,10 @@ public static class Menu
             Phase.Break => "Break in progress",
             _ => $"Next break at {clock(s.NextBreakAt!.Value)}",
         };
-        // Settings change only outside the warning and the break, as on Linux.
-        var settingsOk = s.Phase is Phase.Work or Phase.Paused;
-        return new MenuState(status, s.CanPause, s.Phase == Phase.Paused, settingsOk,
+        // The rule is the core's (bb_menu): settings only outside the warning and the break.
+        var bits = s.MenuBits;
+        return new MenuState(status, (bits & Scheduler.MenuPause) != 0, (bits & Scheduler.MenuCancel) != 0,
+            (bits & Scheduler.MenuSettings) != 0,
             settings.CallExemption, settings.ExemptMic, settings.ExemptCamera);
     }
 }

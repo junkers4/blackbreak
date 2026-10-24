@@ -7,8 +7,21 @@ CLANG ?= clang
 LLD ?= $(NDK)/ld.lld
 QEMU ?= qemu-aarch64
 
-.PHONY: test test-x86_64 test-aarch64 clean
+.PHONY: test test-x86_64 test-aarch64 windows clean
 test: test-x86_64 test-aarch64
+
+# The x86-64 core for the Windows app: a COFF object linked into BlackBreak.exe,
+# and the same code as a Linux shared library for the C# tests on Linux.
+windows: build/blackbreak_core.obj build/libblackbreak_core.so
+
+build/blackbreak_core.obj: x86_64/core.S x86_64/core.inc
+	mkdir -p build
+	$(CLANG) --target=x86_64-pc-windows-msvc -c x86_64/core.S -o $@
+
+build/libblackbreak_core.so: x86_64/core.S x86_64/core.inc
+	mkdir -p build
+	$(CLANG) --target=x86_64-linux-gnu -fPIC -c x86_64/core.S -o build/core-x86_64-pic.o
+	$(LLD) -shared -soname libblackbreak_core.so -o $@ build/core-x86_64-pic.o
 
 build/driver-x86_64: x86_64/core.S x86_64/driver.S x86_64/core.inc
 	mkdir -p build

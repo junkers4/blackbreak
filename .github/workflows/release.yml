@@ -61,7 +61,11 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-      - run: dotnet test windows/Core.Tests
+      - name: Assemble the core
+        run: |
+          mkdir -p core/build
+          clang --target=x86_64-pc-windows-msvc -c core/x86_64/core.S -o core/build/blackbreak_core.obj
+        shell: bash
       - run: dotnet publish windows/App -c Release -r win-x64 -p:PublishAot=true -p:Version=${{ needs.notes.outputs.version }} -o windows/out
       - name: Zip
         shell: pwsh
