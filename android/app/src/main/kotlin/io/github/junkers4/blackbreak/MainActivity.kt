@@ -48,7 +48,7 @@ class MainActivity : Activity() {
         val surface = Color.parseColor(if (night) "#1F1D1A" else "#EFE9DF")
         val ink = Color.parseColor(if (night) "#ECE8E1" else "#1D1B18")
         val muted = Color.parseColor(if (night) "#9A9488" else "#6F695E")
-        val serif = Typeface.create("serif", Typeface.NORMAL)
+        val serif = Typeface.create(Typeface.SERIF, 400, false)
 
         fun card(): LinearLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

@@ -25,7 +25,7 @@ class BreakOverlay(private val context: Context, private val wm: WindowManager) 
     private val slovak = java.util.Locale.getDefault().language == "sk"
     private val cream = Color.parseColor("#ECE8E1")
     private val accent = Color.parseColor("#C9B99A")
-    private val serif = Typeface.create("serif", Typeface.NORMAL)
+    private val serif = Typeface.create(Typeface.SERIF, 400, false)
 
     private fun dp(v: Int) = (v * context.resources.displayMetrics.density).toInt()
 

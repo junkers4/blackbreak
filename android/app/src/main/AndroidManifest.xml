@@ -5,7 +5,7 @@
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:label="BlackBreak"
-        android:theme="@android:style/Theme.DeviceDefault.DayNight">
+        android:theme="@android:style/Theme.DeviceDefault.DayNight.NoActionBar">
 
         <activity
             android:name=".MainActivity"
