@@ -40,6 +40,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        actionBar?.hide() // the screen draws its own title
         val d = resources.displayMetrics.density
         fun dp(v: Int) = (v * d).toInt()
         val night = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
