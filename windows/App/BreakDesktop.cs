@@ -152,9 +152,10 @@ internal sealed unsafe class BreakDesktop : IDisposable
             var lh = px * 12 / 10;
             var left = r.Right / 10;
             var top = r.Bottom * 22 / 100;
-            for (var i = 0; i < Copy.Lines.Length; i++)
+            var lines = Copy.Lines(Locale.Slovak);
+            for (var i = 0; i < lines.Length; i++)
             {
-                var (plain, accent) = Copy.Lines[i];
+                var (plain, accent) = lines[i];
                 var y = top + i * lh;
                 var x = left;
                 var old = Native.SelectObject(dc, _fontLine);
@@ -174,7 +175,7 @@ internal sealed unsafe class BreakDesktop : IDisposable
             }
             var oldCount = Native.SelectObject(dc, _fontCount);
             Native.SetTextColor(dc, Native.Rgb(0x7B, 0x75, 0x6B));
-            var cd = Copy.Seconds(Math.Max(0, (_endsAt - Native.UnixNow() + 999) / 1000));
+            var cd = Copy.Seconds(Locale.Slovak, Math.Max(0, (_endsAt - Native.UnixNow() + 999) / 1000));
             var rc = new RECT { Left = left, Top = r.Bottom - r.Bottom * 12 / 100, Right = r.Right, Bottom = r.Bottom };
             Native.DrawTextW(dc, cd, cd.Length, &rc, Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_NOCLIP);
             Native.SelectObject(dc, oldCount);

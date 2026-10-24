@@ -7,7 +7,7 @@ internal static unsafe class Tray
 {
     public const uint Callback = Native.WM_APP + 1;
     public const int Pause30 = 101, Pause60 = 102, Pause120 = 103, Pause180 = 104, CancelPause = 105,
-        CallExemption = 106, Mic = 107, Camera = 108, Quit = 109;
+        CallExemption = 106, Mic = 107, Camera = 108;
 
     static nint _icon;
 
@@ -33,26 +33,22 @@ internal static unsafe class Tray
     static NOTIFYICONDATAW Data(nint hwnd) => new() { CbSize = (uint)sizeof(NOTIFYICONDATAW), Hwnd = hwnd, Id = 1 };
 
     /// Shows the menu at the cursor and returns the chosen command, or 0.
-    public static int ShowMenu(nint hwnd, string status, bool canPause, bool paused, bool locked, Settings s)
+    public static int ShowMenu(nint hwnd, MenuState m)
     {
         var menu = Native.CreatePopupMenu();
         try
         {
-            Native.AppendMenuW(menu, Native.MF_STRING | Native.MF_GRAYED, 0, status);
+            Native.AppendMenuW(menu, Native.MF_STRING | Native.MF_GRAYED, 0, m.Status);
             Native.AppendMenuW(menu, Native.MF_SEPARATOR, 0, null);
-            var pause = Native.MF_STRING | (canPause ? 0 : Native.MF_GRAYED);
-            Native.AppendMenuW(menu, pause, Pause30, "Pause 30 min");
-            Native.AppendMenuW(menu, pause, Pause60, "Pause 1 hour");
-            Native.AppendMenuW(menu, pause, Pause120, "Pause 2 hours");
-            Native.AppendMenuW(menu, pause, Pause180, "Pause 3 hours");
-            Native.AppendMenuW(menu, Native.MF_STRING | (paused ? 0 : Native.MF_GRAYED), CancelPause, "Cancel pause");
+            var pause = Native.MF_STRING | (m.PauseEnabled ? 0 : Native.MF_GRAYED);
+            for (var i = 0; i < Menu.Pauses.Length; i++)
+                Native.AppendMenuW(menu, pause, (nuint)(Pause30 + i), Menu.Pauses[i].label);
+            Native.AppendMenuW(menu, Native.MF_STRING | (m.CancelEnabled ? 0 : Native.MF_GRAYED), CancelPause, "Cancel pause");
             Native.AppendMenuW(menu, Native.MF_SEPARATOR, 0, null);
-            var grey = locked ? Native.MF_GRAYED : 0;
-            Native.AppendMenuW(menu, Native.MF_STRING | grey | (s.CallExemption ? Native.MF_CHECKED : 0), CallExemption, "Wait with the break while I'm in a call");
-            Native.AppendMenuW(menu, Native.MF_STRING | grey | (s.ExemptMic ? Native.MF_CHECKED : 0), Mic, "Microphone in use");
-            Native.AppendMenuW(menu, Native.MF_STRING | grey | (s.ExemptCamera ? Native.MF_CHECKED : 0), Camera, "Camera in use");
-            Native.AppendMenuW(menu, Native.MF_SEPARATOR, 0, null);
-            Native.AppendMenuW(menu, Native.MF_STRING | grey, Quit, "Quit");
+            var grey = m.SettingsEnabled ? 0 : Native.MF_GRAYED;
+            Native.AppendMenuW(menu, Native.MF_STRING | grey | (m.CallExemption ? Native.MF_CHECKED : 0), CallExemption, "Wait with the break while I'm in a call");
+            Native.AppendMenuW(menu, Native.MF_STRING | grey | (m.ExemptMic ? Native.MF_CHECKED : 0), Mic, "Microphone in use");
+            Native.AppendMenuW(menu, Native.MF_STRING | grey | (m.ExemptCamera ? Native.MF_CHECKED : 0), Camera, "Camera in use");
             POINT p;
             Native.GetCursorPos(&p);
             Native.SetForegroundWindow(hwnd); // otherwise the menu does not close on an outside click

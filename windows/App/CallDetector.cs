@@ -12,22 +12,22 @@ internal static class CallDetector
     {
         if (!s.CallExemption) return false;
         var self = (Environment.ProcessPath ?? "").Replace('\\', '#');
-        return (s.ExemptMic && InUse("microphone", self)) || (s.ExemptCamera && InUse("webcam", self));
+        return CallUsage.InCall(s, Entries("microphone"), Entries("webcam"), self);
     }
 
-    static bool InUse(string capability, string self)
+    static List<(string, long, long)> Entries(string capability)
     {
+        var entries = new List<(string, long, long)>();
         try
         {
             using var key = Registry.CurrentUser.OpenSubKey(Root + capability);
-            if (key == null) return false;
-            var entries = new List<(string, long, long)>();
+            if (key == null) return entries;
             Collect(key, entries);
             using var np = key.OpenSubKey("NonPackaged");
             if (np != null) Collect(np, entries);
-            return CallUsage.InUse(entries, self);
         }
-        catch { return false; }
+        catch { }
+        return entries;
     }
 
     static void Collect(RegistryKey key, List<(string, long, long)> into)

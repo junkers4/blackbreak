@@ -6,23 +6,23 @@ namespace BlackBreak;
 
 internal static class Watchdog
 {
-    const string WatchdogMutex = "Local\\BlackBreak.Watchdog", QuitEvent = "Local\\BlackBreak.Quit";
+    const string WatchdogMutex = "Local\\BlackBreak.Watchdog";
 
     public static int Run(string exePath, int appPid, string dir)
     {
         using var mutex = new Mutex(true, WatchdogMutex, out var first);
         if (!first) return 0;
-        using var quit = new EventWaitHandle(false, EventResetMode.ManualReset, QuitEvent);
         var app = Attach(appPid);
-        while (!quit.WaitOne(1000))
+        // There is no quit: the two copies keep each other alive until the session ends.
+        while (true)
         {
+            Thread.Sleep(1000);
             Rescue(dir);
             if (app is { HasExited: false }) continue;
-            if (quit.WaitOne(1000)) break;
+            Thread.Sleep(1000);
             try { app = Process.Start(new ProcessStartInfo(exePath) { UseShellExecute = false }); }
             catch { app = null; }
         }
-        return 0;
     }
 
     public static void EnsureRunning(string exePath)
@@ -34,12 +34,6 @@ internal static class Watchdog
         }
         try { Process.Start(new ProcessStartInfo(exePath, $"--watchdog {Environment.ProcessId}") { UseShellExecute = false }); }
         catch { }
-    }
-
-    public static void SignalQuit()
-    {
-        using var e = new EventWaitHandle(false, EventResetMode.ManualReset, QuitEvent);
-        e.Set();
     }
 
     static Process? Attach(int pid)

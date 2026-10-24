@@ -43,6 +43,8 @@ internal static unsafe class Program
             Thread.Sleep(int.Parse(args[1]) * 1000 + 500);
             return 0;
         }
+        if (args.Length >= 1 && args[0] == "--test-restore-desktop")
+            return Native.SwitchToDefault() ? 0 : 1;
         if (args.Length >= 2 && args[0] == "--test-input-desktop")
         {
             File.WriteAllText(args[1], Native.InputDesktopName() ?? "(none)");
@@ -156,40 +158,31 @@ internal static unsafe class Program
         }
     }
 
+    // Only the smoke run ends by itself; the app has no quit.
     static void Quit()
     {
-        Watchdog.SignalQuit();
         _desk.Hide();
         Tray.Remove(_hwnd);
         Native.PostQuitMessage(0);
     }
 
-    static string Status() => _sch.Phase switch
-    {
-        Phase.Paused => $"Paused until {Clock(_sch.PauseEndsAt!.Value)}",
-        Phase.Break => "Break in progress",
-        _ => $"Next break at {Clock(_sch.NextBreakAt!.Value)}",
-    };
-
     static string Clock(long ms) => DateTimeOffset.FromUnixTimeMilliseconds(ms).ToLocalTime().ToString("HH:mm");
 
-    static void Menu()
+    static void ShowMenu()
     {
-        var locked = _sch.Phase is Phase.Warning or Phase.Break;
-        var cmd = Tray.ShowMenu(_hwnd, Status(), _sch.CanPause, _sch.Phase == Phase.Paused, locked, _settings);
+        var m = Menu.For(_sch, _settings, Clock);
+        var cmd = Tray.ShowMenu(_hwnd, m);
         var now = Native.UnixNow();
-        switch (cmd)
-        {
-            case Tray.Pause30: Pause(30, now); break;
-            case Tray.Pause60: Pause(60, now); break;
-            case Tray.Pause120: Pause(120, now); break;
-            case Tray.Pause180: Pause(180, now); break;
-            case Tray.CancelPause: _sch.CancelPause(now); break;
-            case Tray.CallExemption: SaveSettings(_settings with { CallExemption = !_settings.CallExemption }); break;
-            case Tray.Mic: SaveSettings(_settings with { ExemptMic = !_settings.ExemptMic }); break;
-            case Tray.Camera: SaveSettings(_settings with { ExemptCamera = !_settings.ExemptCamera }); break;
-            case Tray.Quit: if (!locked) Quit(); break;
-        }
+        if (cmd is >= Tray.Pause30 and <= Tray.Pause180 && m.PauseEnabled)
+            Pause(Menu.Pauses[cmd - Tray.Pause30].minutes, now);
+        else if (cmd == Tray.CancelPause && m.CancelEnabled)
+            _sch.CancelPause(now);
+        else if (m.SettingsEnabled && cmd == Tray.CallExemption)
+            SaveSettings(_settings with { CallExemption = !_settings.CallExemption });
+        else if (m.SettingsEnabled && cmd == Tray.Mic)
+            SaveSettings(_settings with { ExemptMic = !_settings.ExemptMic });
+        else if (m.SettingsEnabled && cmd == Tray.Camera)
+            SaveSettings(_settings with { ExemptCamera = !_settings.ExemptCamera });
         if (cmd != 0) Tick();
     }
 
@@ -214,7 +207,7 @@ internal static unsafe class Program
             if (hwnd == _hwnd)
             {
                 if (msg == Native.WM_TIMER) { Tick(); return 0; }
-                if (msg == Tray.Callback && ((uint)l is Native.WM_RBUTTONUP or Native.WM_LBUTTONUP)) { Menu(); return 0; }
+                if (msg == Tray.Callback && ((uint)l is Native.WM_RBUTTONUP or Native.WM_LBUTTONUP)) { ShowMenu(); return 0; }
                 if (msg == Native.WM_POWERBROADCAST && w is 0x12 or 0x7) { Tick(); return 1; } // resumed from sleep: tick before anything is painted
                 if (msg == _taskbarCreated && !_smoke) { Tray.Add(hwnd); return 0; }
             }
