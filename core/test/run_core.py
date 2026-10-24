@@ -18,7 +18,8 @@ NONE = -(1 << 63)
 PHASES = ['work', 'warning', 'break', 'paused']
 GET = {'phase': 0, 'canPause': 1, 'nextBreakAt': 2, 'breakEndsAt': 3,
        'warningEndsAt': 4, 'pauseEndsAt': 5, 'lastPauseDay': 6}
-DRIVER = sys.argv[1:]
+CONTROLLER = '--controller' in sys.argv
+DRIVER = [a for a in sys.argv[1:] if a != '--controller']
 
 
 def scale_bits(scale):
@@ -193,6 +194,63 @@ def units():
     return s.run()
 
 
+def controller():
+    """The Android controller (REQ-002, REQ-003, REQ-011, REQ-013, REQ-019, REQ-020, REQ-027)."""
+    RING, VOIP = 1, 3
+    one = scale_bits(1)
+
+    def run(mode, exempt, frm, to, s):
+        for t in range(frm, to + 1, 1000):
+            s.cmd(f'x {t} 0 {mode} {exempt}', lambda a: None)
+
+    out = []
+    cases = []
+
+    s = Session(); s.cmd(f'i 0 {one} {NONE}'); run(0, 0, 0, 1189000, s)
+    s.cmd('x 1190000 0 0 0', expect('warning: no break screen', NONE)); s.cmd('g 0', expect_phase('warning shows the notice', 'warning'))
+    cases.append(('warning shows notice', s))
+
+    s = Session(); s.cmd(f'i 0 {one} {NONE}'); run(0, 0, 0, 1199000, s)
+    s.cmd('x 1200000 0 0 0', expect('break shows overlay until breakEndsAt', 1230000))
+    run(0, 0, 1201000, 1229000, s)
+    s.cmd('x 1230000 0 0 0', expect('the screen goes at the end', NONE))
+    cases.append(('break shows overlay until breakEndsAt', s))
+
+    s = Session(); s.cmd(f'i 0 {one} {NONE}'); run(0, 0, 0, 1200000, s)
+    s.cmd(f'x 1205000 0 {RING} 0', expect('ringing removes the break screen', NONE))
+    s.cmd('x 1206000 0 0 0', expect('and it does not come back in that break', NONE))
+    cases.append(('ringing during break hides overlay', s))
+
+    s = Session(); s.cmd(f'i 0 {one} {NONE}'); run(VOIP, 0, 0, 1199000, s)
+    s.cmd(f'x 1200000 0 {VOIP} 0', expect('VoIP with the switch off: the break comes', 1230000))
+    cases.append(('VoIP mode ignored when exemption off', s))
+
+    s = Session(); s.cmd(f'i 0 {one} {NONE}'); run(0, 0, 0, 1139000, s); run(VOIP, 1, 1140000, 1299000, s)
+    s.cmd(f'x 1300000 0 {VOIP} 1', expect('VoIP with the switch on, seen before due: no break', NONE))
+    s.cmd('g 0', expect_phase('still work', 'work'))
+    s.cmd('h 1300000', expect('held', 1))
+    s.cmd('x 1301000 0 0 1', lambda a: None); s.cmd('g 0', expect_phase('the call ends: the warning starts', 'warning'))
+    cases.append(('VoIP mode holds when on and seen before due', s))
+
+    s = Session(); s.cmd(f'i 0 {one} {NONE}'); run(RING, 0, 0, 1299000, s)
+    s.cmd(f'x 1300000 0 {RING} 0', expect('phone call, switch off: no break', NONE))
+    s.cmd('g 0', expect_phase('phone call holds without exemption', 'work'))
+    cases.append(('phone call holds without exemption', s))
+
+    s = Session(); s.cmd(f'i 0 {one} {NONE}'); run(0, 0, 0, 100000, s)
+    s.cmd('o 400000 300000'); s.cmd('g 2', expect('screen off 5 min is rest', 1600000))
+    cases.append(('screen off 5 min is rest', s))
+
+    s = Session(); s.cmd(f'i 0 {one} {NONE}'); run(0, 0, 0, 100000, s)
+    s.cmd('o 340000 240000'); s.cmd('g 2', expect('screen off 4 min is not', 1200000))
+    cases.append(('screen off 4 min is not', s))
+
+    for name, sess in cases:
+        msgs = sess.run()
+        out.append((name, msgs))
+    return out
+
+
 def main():
     if not DRIVER:
         sys.exit(__doc__)
@@ -211,6 +269,13 @@ def main():
     for m in msgs:
         print(f'       {m}')
     failed += bool(msgs)
+    if CONTROLLER:
+        for name, msgs in controller():
+            total += 1
+            print(f'  {"ok  " if not msgs else "FAIL"} controller: {name}')
+            for m in msgs:
+                print(f'       {m}')
+            failed += bool(msgs)
     print(f'{total - failed}/{total} passed')
     sys.exit(1 if failed else 0)
 

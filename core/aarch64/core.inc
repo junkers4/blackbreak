@@ -55,3 +55,12 @@
 .equ SET_EXEMPT,    1
 .equ SET_MIC,       2
 .equ SET_CAMERA,    4
+
+// Android only (controller.S): one more field after the scheduler's.
+.equ ST_DISMISSED,  ST_SIZE     // int flag: a phone call took this break's screen away
+.equ ST_SIZE_CTL,   ST_SIZE + 8
+
+// AudioManager modes, as bb_tick reads them
+.equ MODE_RINGTONE,         1
+.equ MODE_IN_CALL,          2
+.equ MODE_IN_COMMUNICATION, 3

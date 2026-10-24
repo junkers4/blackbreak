@@ -95,7 +95,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           IFS=. read -r major minor patch <<< "${{ needs.notes.outputs.version }}"
-          ./gradlew :core:test :app:testDebugUnitTest :app:assembleRelease \
+          ./gradlew :app:testDebugUnitTest :app:assembleRelease \
             -PversionName="${{ needs.notes.outputs.version }}" \
             -PversionCode=$((major * 10000 + minor * 100 + patch))
       - name: Name the APK

@@ -18,7 +18,6 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
-import io.github.junkers4.blackbreak.core.Phase
 import java.text.DateFormat
 import java.util.Date
 
@@ -168,9 +167,9 @@ class MainActivity : Activity() {
             Phase.BREAK -> "Break in progress"
             else -> "Next break at ${clock.format(Date(s.nextBreakAt!!))}"
         }
-        pauses.forEach { it.second.isEnabled = s.canPause }
-        cancel.isEnabled = ScreenRules.cancelEnabled(s.phase)
-        callSwitch.isEnabled = ScreenRules.callSwitchEnabled(s.phase, svc.held())
+        pauses.forEach { it.second.isEnabled = ScreenRules.pauseEnabled(s) }
+        cancel.isEnabled = ScreenRules.cancelEnabled(s)
+        callSwitch.isEnabled = ScreenRules.callSwitchEnabled(s, svc.held())
         val on = getSharedPreferences(BreakService.PREFS, Context.MODE_PRIVATE).getBoolean(BreakService.PREF_CALL_EXEMPTION, false)
         if (callSwitch.isChecked != on) {
             updatingSwitch = true

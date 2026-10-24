@@ -14,7 +14,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.Configurator
 import androidx.test.uiautomator.UiDevice
-import io.github.junkers4.blackbreak.core.Phase
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -147,7 +146,7 @@ class BreakOverlayTest {
         Thread.sleep(500)
         assertEquals("taps during the break", 1, target.taps)
         assertTrue("break ends by itself", waitFor(8000) { !breakShown() })
-        Thread.sleep(500)
+        assertTrue("the app gets the focus back after the break", waitFor(3000) { target.hasWindowFocus() })
         device.click(device.displayWidth / 2, device.displayHeight / 2)
         assertTrue("a tap reaches the app after the break", waitFor(2000) { target.taps == 2 })
     }

@@ -16,17 +16,18 @@ build/driver-x86_64: x86_64/core.S x86_64/driver.S x86_64/core.inc
 	$(CLANG) --target=x86_64-linux-gnu -c x86_64/driver.S -o build/driver-x86_64.o
 	$(LLD) -static -o $@ build/core-x86_64.o build/driver-x86_64.o
 
-build/driver-aarch64: aarch64/core.S aarch64/driver.S aarch64/core.inc
+build/driver-aarch64: aarch64/core.S aarch64/controller.S aarch64/driver.S aarch64/core.inc
 	mkdir -p build
 	$(CLANG) --target=aarch64-linux-gnu -c aarch64/core.S -o build/core-aarch64.o
+	$(CLANG) --target=aarch64-linux-gnu -c aarch64/controller.S -o build/controller-aarch64.o
 	$(CLANG) --target=aarch64-linux-gnu -c aarch64/driver.S -o build/driver-aarch64.o
-	$(LLD) -static -o $@ build/core-aarch64.o build/driver-aarch64.o
+	$(LLD) -static -o $@ build/core-aarch64.o build/controller-aarch64.o build/driver-aarch64.o
 
 test-x86_64: build/driver-x86_64
 	python3 test/run_core.py build/driver-x86_64
 
 test-aarch64: build/driver-aarch64
-	python3 test/run_core.py $(QEMU) build/driver-aarch64
+	python3 test/run_core.py --controller $(QEMU) build/driver-aarch64
 
 clean:
 	rm -rf build

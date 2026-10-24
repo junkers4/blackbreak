@@ -1,4 +1,4 @@
-// The words of the break screen, in English or Slovak.
+// The words of the break screen, in English or Slovak. The seconds come from the core.
 package io.github.junkers4.blackbreak
 
 /** A line is the plain part and an emphasised part, which is set in italic. */
@@ -11,10 +11,5 @@ object Copy {
         listOf(Line("Rest your eyes."), Line("Look out of the window, ", "as far as you can."), Line("Then stretch."))
     }
 
-    fun seconds(slovak: Boolean, n: Long): String = when {
-        !slovak -> if (n == 1L) "1 second" else "$n seconds"
-        n == 1L -> "1 sekunda"
-        n in 2..4 -> "$n sekundy"
-        else -> "$n sekúnd"
-    }
+    fun seconds(slovak: Boolean, n: Long): String = Native.seconds(n, if (slovak) 1 else 0)
 }

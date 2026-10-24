@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "blackbreak"
-include(":core", ":app")
+include(":app")

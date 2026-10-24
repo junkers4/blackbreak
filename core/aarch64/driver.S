@@ -1,7 +1,8 @@
 // driver.S - drives the AArch64 core from text commands, for the tests.
 //
-// The same protocol as x86_64/driver.S (see there); a Linux program with no
-// libc, run under qemu-aarch64 on a PC.
+// The same protocol as x86_64/driver.S (see there), plus the Android
+// controller: x NOW IDLE MODE EXEMPT (bb_tick), o NOW OFF_MS (bb_screen_on),
+// h NOW (bb_held). A Linux program with no libc, run under qemu-aarch64.
 //
 // x19 = read cursor, x20 = end of input, x21 = write cursor, x22 = &state
 
@@ -9,7 +10,7 @@
 
     .bss
     .balign 16
-state:  .skip ST_SIZE
+state:  .skip ST_SIZE_CTL
 inbuf:  .skip 4 << 20
 outbuf: .skip 4 << 20
 
@@ -58,6 +59,12 @@ _start:
     b.eq    .Lincall
     cmp     w23, #'s'
     b.eq    .Lseconds
+    cmp     w23, #'x'
+    b.eq    .Ltick
+    cmp     w23, #'o'
+    b.eq    .Lscreen
+    cmp     w23, #'h'
+    b.eq    .Lheld
     mov     x24, #2                 // unknown command
     b       .Lexit_code
 
@@ -139,6 +146,37 @@ _start:
     mov     w0, #10
     strb    w0, [x21], #1
     b       .Lnext
+
+.Ltick:                             // x NOW IDLE MODE EXEMPT -> break end or NONE
+    bl      parse_int
+    mov     x24, x0
+    bl      parse_int
+    mov     x25, x0
+    bl      parse_int
+    mov     x26, x0
+    bl      parse_int
+    mov     x4, x0
+    mov     x0, x22
+    mov     x1, x24
+    mov     x2, x25
+    mov     x3, x26
+    bl      bb_tick
+    b       .Lanswer
+.Lscreen:                           // o NOW OFF_MS (no answer)
+    bl      parse_int
+    mov     x24, x0
+    bl      parse_int
+    mov     x2, x0
+    mov     x0, x22
+    mov     x1, x24
+    bl      bb_screen_on
+    b       .Lnext
+.Lheld:                             // h NOW -> 0/1
+    bl      parse_int
+    mov     x1, x0
+    mov     x0, x22
+    bl      bb_held
+    b       .Lanswer
 
 .Lanswer:
     bl      put_int

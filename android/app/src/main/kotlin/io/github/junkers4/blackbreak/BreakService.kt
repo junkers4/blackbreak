@@ -13,14 +13,12 @@ import android.os.Looper
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
-import io.github.junkers4.blackbreak.core.Phase
-import io.github.junkers4.blackbreak.core.Scheduler
 
 class BreakService : AccessibilityService() {
     companion object {
         @Volatile var instance: BreakService? = null
         const val PREFS = "blackbreak"
-        const val PREF_LAST_PAUSE_DAY = "lastPauseDay"
+        const val PREF_LAST_PAUSE_DAY = "lastPauseDayNumber"
         const val PREF_CALL_EXEMPTION = "callExemption"
     }
 
@@ -83,7 +81,8 @@ class BreakService : AccessibilityService() {
         breakOverlay = BreakOverlay(this, wm)
         notice = NoticeOverlay(this, wm)
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
-        controller = BreakController(Scheduler(System.currentTimeMillis(), scale, lastPauseDay = prefs.getString(PREF_LAST_PAUSE_DAY, null)))
+        val day = prefs.getLong(PREF_LAST_PAUSE_DAY, Native.NONE).takeIf { it != Native.NONE }
+        controller = BreakController(Scheduler(System.currentTimeMillis(), scale, lastPauseDay = day))
         registerReceiver(screenReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
@@ -133,7 +132,7 @@ class BreakService : AccessibilityService() {
     fun pause(minutes: Int): Boolean {
         val now = System.currentTimeMillis()
         if (!controller.scheduler.pause(minutes * 60_000L, now)) return false
-        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(PREF_LAST_PAUSE_DAY, controller.scheduler.lastPauseDay).apply()
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putLong(PREF_LAST_PAUSE_DAY, controller.scheduler.lastPauseDay ?: Native.NONE).apply()
         tick()
         return true
     }

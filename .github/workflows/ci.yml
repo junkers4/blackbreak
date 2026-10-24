@@ -15,6 +15,15 @@ jobs:
           node-version: 24
       - run: make -C linux test
 
+  core-asm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang lld qemu-user
+      - run: make -C core test QEMU=qemu-aarch64
+
   gnome-pack:
     runs-on: ubuntu-latest
     steps:
@@ -78,7 +87,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: ./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug
+      - run: ./gradlew :app:testDebugUnitTest :app:assembleDebug
         working-directory: android
       - name: Size
         run: |
