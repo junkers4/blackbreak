@@ -35,6 +35,14 @@ internal static unsafe class Program
             Native.SwitchDesktop(d);
             Thread.Sleep(Timeout.Infinite);
         }
+        if (args.Length >= 2 && args[0] == "--test-preview") // shows the break on this desktop for N seconds, for screenshots
+        {
+            using var preview = new BreakDesktop(null, preview: true);
+            var now0 = Native.UnixNow();
+            preview.Show(now0 + long.Parse(args[1]) * 1000, now0 + 60_000);
+            Thread.Sleep(long.Parse(args[1]) * 1000 + 500);
+            return 0;
+        }
         if (args.Length >= 2 && args[0] == "--test-input-desktop")
         {
             File.WriteAllText(args[1], Native.InputDesktopName() ?? "(none)");

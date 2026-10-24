@@ -21,7 +21,13 @@ internal sealed unsafe class BreakDesktop : IDisposable
     nint _desk, _ctl, _primary, _hook, _fontLine, _fontItalic, _fontCount, _bg;
     int _primaryHeight;
 
-    public BreakDesktop(Action<string>? log = null) => _log = log;
+    readonly bool _preview; // CI screenshots: draw on the current desktop, no switch and no hook
+
+    public BreakDesktop(Action<string>? log = null, bool preview = false)
+    {
+        _log = log;
+        _preview = preview;
+    }
 
     public bool Visible => _thread is { IsAlive: true };
 
@@ -55,15 +61,18 @@ internal sealed unsafe class BreakDesktop : IDisposable
         var switched = false;
         try
         {
-            _desk = Native.CreateDesktopW(DesktopName, 0, 0, 0, Native.GENERIC_ALL, 0);
-            if (_desk == 0 || Native.SetThreadDesktop(_desk) == 0) return;
+            if (!_preview)
+            {
+                _desk = Native.CreateDesktopW(DesktopName, 0, 0, 0, Native.GENERIC_ALL, 0);
+                if (_desk == 0 || Native.SetThreadDesktop(_desk) == 0) return;
+            }
             Native.RegisterClass(ClassName, (nint)(delegate* unmanaged<nint, uint, nint, nint, nint>)&WndProc,
                 _bg = Native.CreateSolidBrush(Native.Rgb(0x0D, 0x0C, 0x0B)));
             _ctl = Native.CreateWindowExW(Native.WS_EX_TOOLWINDOW, ClassName, null, Native.WS_POPUP, 0, 0, 1, 1, 0, 0, Native.Instance, 0);
             BuildWindows();
-            switched = Native.SwitchDesktop(_desk) != 0;
+            switched = !_preview && Native.SwitchDesktop(_desk) != 0;
             if (switched) _log?.Invoke("desktop switched");
-            _hook = Native.SetWindowsHookExW(Native.WH_KEYBOARD_LL, (nint)(delegate* unmanaged<int, nint, nint, nint>)&KeyHook, Native.Instance, 0);
+            if (!_preview) _hook = Native.SetWindowsHookExW(Native.WH_KEYBOARD_LL, (nint)(delegate* unmanaged<int, nint, nint, nint>)&KeyHook, Native.Instance, 0);
             Native.SetTimer(_ctl, 1, 250, 0);
             Native.SetTimer(_ctl, 2, (uint)Math.Clamp(_failsafeAt - Native.UnixNow(), 1, int.MaxValue), 0); // fail-safe, independent of the end time
             _started.Set();
@@ -182,7 +191,7 @@ internal sealed unsafe class BreakDesktop : IDisposable
             return;
         }
         // Ctrl+Alt+Del then Cancel returns to the default desktop: take the input back.
-        if (Native.InputDesktopName() is { } name && name != DesktopName)
+        if (!_preview && Native.InputDesktopName() is { } name && name != DesktopName)
             Native.SwitchDesktop(_desk);
         var sec = (_endsAt - now + 999) / 1000;
         if (sec != _lastSec)
