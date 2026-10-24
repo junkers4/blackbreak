@@ -82,4 +82,17 @@ class BreakControllerTest {
         c.screenOn(340_000, 240_000)
         assertEquals(1_200_000L, c.scheduler.nextBreakAt)
     }
+
+    // REQ-014: the call switch only in a normal work interval
+    @Test fun `call switch only in work and not while held`() {
+        assertTrue(ScreenRules.callSwitchEnabled(Phase.WORK, false))
+        assertFalse(ScreenRules.callSwitchEnabled(Phase.WORK, true))
+        for (p in listOf(Phase.WARNING, Phase.BREAK, Phase.PAUSED)) assertFalse(ScreenRules.callSwitchEnabled(p, false), "$p")
+    }
+
+    // REQ-010: cancel only while paused
+    @Test fun `cancel only while paused`() {
+        assertTrue(ScreenRules.cancelEnabled(Phase.PAUSED))
+        for (p in listOf(Phase.WORK, Phase.WARNING, Phase.BREAK)) assertFalse(ScreenRules.cancelEnabled(p), "$p")
+    }
 }

@@ -43,3 +43,9 @@ class BreakController(val scheduler: Scheduler) {
     fun held(now: Long): Boolean =
         scheduler.phase == Phase.WORK && (scheduler.nextBreakAt?.let { now >= it - Scheduler.WARN_MS } ?: false)
 }
+
+/** What the app screen allows: settings only in a normal work interval, never in the warning, the break or a hold. */
+object ScreenRules {
+    fun callSwitchEnabled(phase: Phase, held: Boolean): Boolean = phase == Phase.WORK && !held
+    fun cancelEnabled(phase: Phase): Boolean = phase == Phase.PAUSED
+}

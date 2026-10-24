@@ -169,8 +169,8 @@ class MainActivity : Activity() {
             else -> "Next break at ${clock.format(Date(s.nextBreakAt!!))}"
         }
         pauses.forEach { it.second.isEnabled = s.canPause }
-        cancel.isEnabled = s.phase == Phase.PAUSED
-        callSwitch.isEnabled = s.phase == Phase.WORK && !svc.held()
+        cancel.isEnabled = ScreenRules.cancelEnabled(s.phase)
+        callSwitch.isEnabled = ScreenRules.callSwitchEnabled(s.phase, svc.held())
         val on = getSharedPreferences(BreakService.PREFS, Context.MODE_PRIVATE).getBoolean(BreakService.PREF_CALL_EXEMPTION, false)
         if (callSwitch.isChecked != on) {
             updatingSwitch = true
