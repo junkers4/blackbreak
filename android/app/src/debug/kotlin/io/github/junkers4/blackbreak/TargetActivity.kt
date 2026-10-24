@@ -4,7 +4,7 @@ import android.app.Activity
 import android.os.Bundle
 import android.widget.Button
 
-/** A full-screen button that counts the taps that reach it. */
+/** Debug builds only, for the instrumented tests: a full-screen button that counts the taps that reach it. */
 class TargetActivity : Activity() {
     @Volatile var taps = 0
 

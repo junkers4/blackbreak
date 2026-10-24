@@ -83,12 +83,17 @@ class BreakOverlayTest {
         assertTrue("break shown", waitFor(3000) { breakShown() })
     }
 
-    @Before fun setUp() = startService("0")
+    @Before fun setUp() {
+        shell("svc power stayon usb") // the screen must stay on between tests
+        device.wakeUp()
+        startService("0")
+    }
 
     @After fun tearDown() {
         shell("setprop debug.blackbreak.fast 0")
         shell("settings delete secure enabled_accessibility_services")
         shell("settings put secure accessibility_enabled 0")
+        shell("svc power stayon false")
     }
 
     // REQ-007: turned on, it starts a fresh interval
@@ -142,10 +147,9 @@ class BreakOverlayTest {
         Thread.sleep(500)
         assertEquals("taps during the break", 1, target.taps)
         assertTrue("break ends by itself", waitFor(8000) { !breakShown() })
-        startTarget().let { t ->
-            device.click(device.displayWidth / 2, device.displayHeight / 2)
-            assertTrue("a tap reaches the app after the break", waitFor(2000) { t.taps == 1 })
-        }
+        Thread.sleep(500)
+        device.click(device.displayWidth / 2, device.displayHeight / 2)
+        assertTrue("a tap reaches the app after the break", waitFor(2000) { target.taps == 2 })
     }
 
     // REQ-022: Back, Home and Recents leave the black screen in place

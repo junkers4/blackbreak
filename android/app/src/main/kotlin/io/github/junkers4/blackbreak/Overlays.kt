@@ -34,10 +34,14 @@ class BreakOverlay(private val context: Context, private val wm: WindowManager) 
         textSize = 14f
     }
     val view: View get() = root
-    private val root = FrameLayout(context).apply {
+    // Focused while shown, so every key reaches it and none reaches the app below (volume included).
+    private val root = object : FrameLayout(context) {
+        override fun dispatchKeyEvent(event: android.view.KeyEvent) = true
+    }.apply {
         setBackgroundColor(Color.parseColor("#0D0C0B"))
         isClickable = true // consumes every touch
-        isFocusable = false
+        isFocusable = true
+        isFocusableInTouchMode = true
         val height = context.resources.displayMetrics.heightPixels
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -83,6 +87,7 @@ class BreakOverlay(private val context: Context, private val wm: WindowManager) 
             fitInsetsTypes = 0
         }
         wm.addView(root, params)
+        root.requestFocus()
         shown = true
     }
 
