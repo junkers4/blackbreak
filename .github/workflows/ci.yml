@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gnome-shell libglib2.0-bin
+          sudo apt-get install -y --no-install-recommends gnome-shell gjs libglib2.0-bin
       - run: glib-compile-schemas --strict --dry-run linux/blackbreak@junkers4.github.io/schemas
       - run: make -C linux pack
       - run: make -C linux test-detector

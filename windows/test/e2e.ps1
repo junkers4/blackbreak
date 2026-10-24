@@ -56,7 +56,14 @@ function Stop-All {
     Remove-Item (Join-Path $dir 'state.json') -ErrorAction SilentlyContinue
     if ((Input-Desktop) -eq 'BlackBreak') { & $Exe --test-restore-desktop | Out-Null }
 }
-function Read-Target($log) { (Get-Content $log -ErrorAction SilentlyContinue) -split '\|' }
+function Read-Target($log) {
+    for ($i = 0; $i -lt 20; $i++) {
+        $parts = ((Get-Content $log -Raw -ErrorAction SilentlyContinue) ?? '') -split '\|'
+        if ($parts.Count -eq 6) { return $parts }
+        Start-Sleep -Milliseconds 100
+    }
+    throw "cannot read $log"
+}
 
 # ---------------------------------------------------------------------------
 Write-Host 'INPUT: keys and clicks do not reach other windows during a break (REQ-004, REQ-022, REQ-023)'

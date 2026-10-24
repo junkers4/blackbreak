@@ -19,7 +19,9 @@ $t.Interval = 150
 $t.Add_Tick({
     $tp = $tb.PointToScreen((New-Object Drawing.Point 30, 12))
     $bp = $b.PointToScreen((New-Object Drawing.Point 180, 80))
-    "$($tb.Text)|$($script:clicks)|$($tp.X)|$($tp.Y)|$($bp.X)|$($bp.Y)" | Set-Content -NoNewline $Log
+    # written whole and then renamed, so a reader never sees a half-written file
+    [IO.File]::WriteAllText("$Log.tmp", "$($tb.Text)|$($script:clicks)|$($tp.X)|$($tp.Y)|$($bp.X)|$($bp.Y)")
+    Move-Item -Force "$Log.tmp" $Log
 })
 $t.Start()
 $f.Add_Shown({ $f.Activate(); $tb.Focus() })
