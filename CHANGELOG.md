@@ -5,6 +5,9 @@ and versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+- Android: the same pixel look (animated rest screen with an eye and a horizon, warning, app screen, eye icon), built by `android/build.sh`. No accessibility service: a foreground service and a window over other apps. New options: wait while music or video plays, buzz when a break ends, hide the warning, test break, breaks taken today.
+- Linux: pixel-art look in the manner of Doom and Wolfenstein 3D: pixel-framed break screen with a progress bar, pixel-font warning, eye icon, pixel menu and settings.
+
 ## [0.3.0] - 2026-10-24
 
 Android 8 or newer.

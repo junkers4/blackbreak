@@ -1,5 +1,5 @@
 UUID := blackbreak@junkers4.github.io
-EXTRA := copy.js scheduler.js overlay.js notice.js indicator.js callDetect.js
+EXTRA := pixelfont.js pixel.js copy.js scheduler.js overlay.js notice.js indicator.js callDetect.js
 
 .PHONY: test test-detector test-headless test-all pack install
 test:

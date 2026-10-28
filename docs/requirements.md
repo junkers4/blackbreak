@@ -54,7 +54,7 @@ How to run:
 
 | REQ | requirement | Linux | Windows | Android |
 |---|---|---|---|---|
-| REQ-026 | Defaults: call exemption off; microphone on; camera on (Android: one switch, off). | LH DEFAULTS | WU "defaults" | AI appScreenHasNoOffAndSwitchWorks |
+| REQ-026 | Defaults: everything off: call exemption, microphone, camera, fullscreen window, chosen app (Android: one switch, off). | LH DEFAULTS | WU "defaults" | AI appScreenHasNoOffAndSwitchWorks |
 | REQ-011 | With the exemption off, a call never holds a break. | S call cases; LD; LH CALLS | S; WU; WE CALLS | S; AU VoIP mode ignored when exemption off; AI voipCallIgnoredWhenSwitchOff |
 | REQ-027 | Exemption on: microphone use holds the break when "Microphone in use" is on, not when it is off. | LD matrix; LH CALLS; LH MIC (real PipeWire recording) | WU CallSettings; WE CALLS (registry) | AU VoIP mode holds when on and seen before due; AI voipCallHoldsBreakWhenSwitchOn (real communication mode + voice stream) |
 | REQ-028 | Exemption on: camera use holds the break when "Camera in use" is on, not when it is off. | LD matrix + camera scan of a fake /proc; LH CALLS | WU CallSettings; WE CALLS (registry) | — (no camera rule on Android) |
@@ -68,6 +68,6 @@ How to run:
 
 | REQ | requirement | Linux | Windows | Android |
 |---|---|---|---|---|
-| REQ-030 | The break is warm black (#0D0C0B) with three cream serif lines, the middle one ending in tan italic, and the seconds left in the corner; English, or Slovak when the system is Slovak. | LH "three lines", "the seconds left are shown"; LH pixels | WU Copy; WE SCREEN pixels | AU Copy; AI breakCoversWholeDisplay (texts) |
+| REQ-030 | The break is a pixel-art Wolfenstein-style screen on warm black (#0D0C0B): a red pixel frame with three pixel-font lines, the middle one ending in a gold second row, the seconds left and a 15-segment progress bar; English, or Slovak when the system is Slovak. | LH "three lines", "the seconds left are shown"; LH pixels | WU Copy; WE SCREEN pixels | AU Copy; AI breakCoversWholeDisplay (texts) |
 
 Requirements without an automated test on a platform where they apply: REQ-032 on Windows (manual).

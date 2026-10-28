@@ -7,8 +7,9 @@ check 'a fresh interval starts in the work phase' "$X._scheduler.phase === 'work
 
 echo 'DEFAULTS (REQ-011, REQ-026)'
 check 'call exemption is off' "$X._settings.get_boolean('call-exemption') === false"
-check 'microphone is on' "$X._settings.get_boolean('exempt-mic') === true"
-check 'camera is on' "$X._settings.get_boolean('exempt-camera') === true"
+check 'microphone is off' "$X._settings.get_boolean('exempt-mic') === false"
+check 'camera is off' "$X._settings.get_boolean('exempt-camera') === false"
+check 'fullscreen and chosen app are off' "$X._settings.get_boolean('exempt-fullscreen') === false && $X._settings.get_boolean('exempt-app-on') === false"
 
 echo 'CONTROLS: before the break, keys and clicks work (proves the input is real)'
 key Super_L

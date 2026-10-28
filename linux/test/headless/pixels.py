@@ -1,4 +1,4 @@
-# Checks a screenshot of the break: warm black background, light text in the upper half.
+# Checks a screenshot of the break: warm black background, light pixel text in the upper half.
 import struct, sys, zlib
 
 def read_png(path):

@@ -12,7 +12,7 @@ function check(ok, what) {
 }
 
 function fakeSettings(values) {
-    return {get_boolean: k => values[k]};
+    return {get_boolean: k => values[k] ?? false, get_strv: k => values[k] ?? []};
 }
 
 function detector(call, mic, cam, micUse, camUse) {
@@ -38,6 +38,28 @@ for (const [name, args, want] of cases) {
     check(d.inCall() === want, name);
     d.destroy();
 }
+
+// Busy windows: a fullscreen window and listed apps, independent of the call switch
+print('busy windows');
+function win({fullscreen = false, cls = 'firefox', app = null} = {}) {
+    return {is_fullscreen: () => fullscreen, get_wm_class: () => cls, get_gtk_application_id: () => app};
+}
+function busy(values, focus) {
+    globalThis.global = {display: {focus_window: focus}};
+    const d = new CallDetector(fakeSettings(values));
+    const r = d.inCall();
+    d.destroy();
+    return r;
+}
+check(busy({'exempt-fullscreen': true}, win({fullscreen: true})) === true, 'fullscreen on: a fullscreen window holds the break');
+check(busy({'exempt-fullscreen': true}, win()) === false, 'fullscreen on: a normal window does not');
+check(busy({}, win({fullscreen: true})) === false, 'fullscreen off: it does not');
+check(busy({'exempt-app-on': true, 'exempt-apps': [' Steam.desktop ']}, win({cls: 'steam_app_730'})) === true, 'a listed app in focus holds it (case, spaces)');
+check(busy({'exempt-app-on': true, 'exempt-apps': ['org.blender.Blender.desktop']}, win({cls: 'firefox', app: 'org.blender.Blender'})) === true, 'the app id counts too');
+check(busy({'exempt-app-on': true, 'exempt-apps': ['steam.desktop']}, win()) === false, 'another app does not');
+check(busy({'exempt-apps': ['steam.desktop']}, win({cls: 'steam'})) === false, 'a chosen app with the switch off holds nothing');
+check(busy({'exempt-app-on': true, 'exempt-apps': ['steam.desktop']}, null) === false, 'no focused window: no hold');
+delete globalThis.global;
 
 // Settings take effect only at snapshot() (the start of a work interval): REQ-014
 print('snapshot');

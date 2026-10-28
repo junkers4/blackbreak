@@ -1,21 +1,44 @@
-.blackbreak-overlay {
-  background-color: #0d0c0b;
-}
-
-.blackbreak-line {
-  color: #ece8e1;
-  font-weight: 400;
-}
-
-.blackbreak-countdown {
-  color: #7b756b;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
 .blackbreak-notice {
-  color: #ece8e1;
-  background-color: rgba(13, 12, 11, 0.92);
-  border-radius: 999px;
-  padding: 8px 18px;
-  font-size: 12pt;
+  background-color: #0d0c0b;
+  border: 3px solid #b01818;
+  padding: 6px 12px;
+  box-shadow: 4px 4px 0 #3c0808;
+}
+
+.blackbreak-menu .popup-menu-content {
+  background-color: #04042c;
+  border: 3px solid #5c5cfc;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 #000000;
+  padding: 6px 4px;
+  font-family: "DejaVu Sans Mono", monospace;
+  font-weight: bold;
+  font-size: 10pt;
+  color: #f4f0e0;
+}
+
+.blackbreak-menu .popup-menu-item {
+  border-radius: 0;
+  border-left: 4px solid transparent;
+  padding: 5px 12px;
+  color: #f4f0e0;
+}
+
+.blackbreak-menu .popup-menu-item:active,
+.blackbreak-menu .popup-menu-item:focus,
+.blackbreak-menu .popup-menu-item:hover {
+  background-color: #b01818;
+  border-left: 4px solid #fcc030;
+  color: #fcc030;
+}
+
+.blackbreak-menu .popup-menu-item:insensitive {
+  color: #5a5a8c;
+}
+
+.blackbreak-menu .popup-separator-menu-item {
+  -gradient-height: 2px;
+  -gradient-start: #5c5cfc;
+  -gradient-end: #5c5cfc;
+  margin: 4px 8px;
 }
