@@ -5,7 +5,7 @@ Fast runs: set `BLACKBREAK_DEBUG_FAST=1` before starting `BlackBreak.exe`
 
 ## Break screen
 - [ ] The break covers every monitor and the taskbar; solid black.
-- [ ] The three lines are cream on warm black, left aligned, the middle one with an italic tan ending; the seconds left are in the bottom left corner.
+- [ ] The primary monitor shows the pixel scene: an eye that looks around and blinks, three white pixel-font lines (the middle one with a gold second row), the seconds left, a 15-segment bar and a drifting horizon in a red frame; other monitors are plain black.
 - [ ] The break ends after 30 s and the normal desktop is back.
 
 ## No input

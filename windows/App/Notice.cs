@@ -1,4 +1,4 @@
-// The warning: a small click-through pill at the top centre of the primary monitor.
+// The warning: a small click-through pixel box at the top centre of the primary monitor.
 using System.Runtime.InteropServices;
 
 namespace BlackBreak;
@@ -10,7 +10,8 @@ internal sealed unsafe class Notice : IDisposable
     static bool _registered;
 
     string _text = "";
-    nint _hwnd, _font;
+    nint _hwnd;
+    int _px = 2;
 
     public void Show(string text)
     {
@@ -18,30 +19,21 @@ internal sealed unsafe class Notice : IDisposable
         _text = text;
         if (!_registered)
         {
-            Native.RegisterClass(ClassName, (nint)(delegate* unmanaged<nint, uint, nint, nint, nint>)&WndProc, Native.CreateSolidBrush(Native.Rgb(0x1F, 0x1D, 0x1A)));
+            Native.RegisterClass(ClassName, (nint)(delegate* unmanaged<nint, uint, nint, nint, nint>)&WndProc, Native.CreateSolidBrush(Native.Rgb(0x0D, 0x0C, 0x0B)));
             _registered = true;
         }
         var scale = Native.GetDpiForSystem() / 96.0;
-        if (_font == 0)
-            _font = Native.CreateFontW(-(int)(16 * scale), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
+        _px = Math.Max(2, (int)Math.Round(2.2 * scale));
         if (_hwnd == 0)
         {
             _hwnd = Native.CreateWindowExW(Native.WS_EX_LAYERED | Native.WS_EX_TRANSPARENT | Native.WS_EX_TOPMOST |
                 Native.WS_EX_NOACTIVATE | Native.WS_EX_TOOLWINDOW, ClassName, null, Native.WS_POPUP, 0, 0, 10, 10, 0, 0, Native.Instance, 0);
-            Native.SetLayeredWindowAttributes(_hwnd, 0, 235, Native.LWA_ALPHA);
+            Native.SetLayeredWindowAttributes(_hwnd, 0, 245, Native.LWA_ALPHA);
         }
-        var dc = Native.GetDC(_hwnd);
-        var old = Native.SelectObject(dc, _font);
-        SIZE size;
-        Native.GetTextExtentPoint32W(dc, text, text.Length, &size);
-        Native.SelectObject(dc, old);
-        Native.ReleaseDC(_hwnd, dc);
-        var padX = (int)(22 * scale);
-        var h = size.Cy + (int)(16 * scale);
-        var w = size.Cx + 2 * padX;
+        var w = PixelArt.TextWidth(text, _px) + _px * 10;
+        var h = PixelArt.Rows * _px + _px * 8;
         var x = (Native.GetSystemMetrics(Native.SM_CXSCREEN) - w) / 2;
         var y = (int)(24 * scale);
-        Native.SetWindowRgn(_hwnd, Native.CreateRoundRectRgn(0, 0, w + 1, h + 1, h, h), 0);
         Native.SetWindowPos(_hwnd, Native.HWND_TOPMOST, x, y, w, h, Native.SWP_NOACTIVATE | Native.SWP_SHOWWINDOW);
         Native.InvalidateRect(_hwnd, null, 1);
     }
@@ -54,8 +46,7 @@ internal sealed unsafe class Notice : IDisposable
     public void Dispose()
     {
         if (_hwnd != 0) Native.DestroyWindow(_hwnd);
-        if (_font != 0) Native.DeleteObject(_font);
-        _hwnd = _font = 0;
+        _hwnd = 0;
     }
 
     void Paint(nint hwnd)
@@ -64,11 +55,9 @@ internal sealed unsafe class Notice : IDisposable
         var dc = Native.BeginPaint(hwnd, &ps);
         RECT r;
         Native.GetClientRect(hwnd, &r);
-        Native.SetBkMode(dc, Native.TRANSPARENT);
-        Native.SetTextColor(dc, Native.Rgb(0xEC, 0xE8, 0xE1));
-        var old = Native.SelectObject(dc, _font);
-        Native.DrawTextW(dc, _text, _text.Length, &r, Native.DT_CENTER | Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_VCENTER);
-        Native.SelectObject(dc, old);
+        PixelArt.Rect(dc, PixelArt.Bg, 0, 0, r.Right, r.Bottom);
+        PixelArt.Box(dc, 0, 0, r.Right, r.Bottom, _px, PixelArt.Bg, PixelArt.Red, PixelArt.Red);
+        PixelArt.Text(dc, _text, _px * 5, _px * 3, _px, PixelArt.Gold, false);
         Native.EndPaint(hwnd, &ps);
     }
 

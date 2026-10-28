@@ -125,6 +125,13 @@ internal static unsafe partial class Native
 
     // gdi32
     [LibraryImport("gdi32.dll")] public static partial nint GetStockObject(int obj);
+    [LibraryImport("gdi32.dll")] public static partial uint SetDCBrushColor(nint hdc, uint color);
+    [LibraryImport("gdi32.dll")] public static partial nint CreateCompatibleDC(nint hdc);
+    [LibraryImport("gdi32.dll")] public static partial nint CreateCompatibleBitmap(nint hdc, int w, int h);
+    [LibraryImport("gdi32.dll")] public static partial int BitBlt(nint dst, int x, int y, int w, int h, nint src, int sx, int sy, uint rop);
+    [LibraryImport("gdi32.dll")] public static partial int DeleteDC(nint hdc);
+    public const int DC_BRUSH = 18;
+    public const uint SRCCOPY = 0x00CC0020;
     [LibraryImport("gdi32.dll")] public static partial nint CreateSolidBrush(uint color);
     [LibraryImport("gdi32.dll", StringMarshalling = StringMarshalling.Utf16)]
     public static partial nint CreateFontW(int h, int w, int esc, int orient, int weight, uint italic, uint underline, uint strike, uint charset, uint outPrec, uint clipPrec, uint quality, uint pitch, string face);

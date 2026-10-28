@@ -1,4 +1,4 @@
-// The break screen: a private Win32 desktop with one black popup per monitor and a swallowing keyboard hook.
+// The break screen: a private Win32 desktop with one popup per monitor (the pixel rest scene on the primary one, black on the others) and a swallowing keyboard hook.
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BlackBreak.Core;
@@ -17,9 +17,8 @@ internal sealed unsafe class BreakDesktop : IDisposable
     readonly ManualResetEventSlim _started = new();
     Thread? _thread;
     volatile uint _tid;
-    long _endsAt, _failsafeAt, _lastSec = -1;
-    nint _desk, _ctl, _primary, _hook, _fontLine, _fontItalic, _fontCount, _bg;
-    int _primaryHeight;
+    long _endsAt, _failsafeAt, _total;
+    nint _desk, _ctl, _primary, _hook, _bg;
 
     readonly bool _preview; // CI screenshots: draw on the current desktop, no switch and no hook
 
@@ -35,6 +34,7 @@ internal sealed unsafe class BreakDesktop : IDisposable
     {
         if (Visible) return;
         _endsAt = endsAtMs;
+        _total = Math.Max(1, endsAtMs - Native.UnixNow());
         _failsafeAt = failsafeAtMs;
         _started.Reset();
         _thread = new Thread(Run) { IsBackground = true };
@@ -73,7 +73,7 @@ internal sealed unsafe class BreakDesktop : IDisposable
             switched = !_preview && Native.SwitchDesktop(_desk) != 0;
             if (switched) _log?.Invoke("desktop switched");
             if (!_preview) _hook = Native.SetWindowsHookExW(Native.WH_KEYBOARD_LL, (nint)(delegate* unmanaged<int, nint, nint, nint>)&KeyHook, Native.Instance, 0);
-            Native.SetTimer(_ctl, 1, 250, 0);
+            Native.SetTimer(_ctl, 1, 100, 0); // the scene moves, so it is redrawn ten times a second
             Native.SetTimer(_ctl, 2, (uint)Math.Clamp(_failsafeAt - Native.UnixNow(), 1, int.MaxValue), 0); // fail-safe, independent of the end time
             _started.Set();
             MSG m;
@@ -91,16 +91,13 @@ internal sealed unsafe class BreakDesktop : IDisposable
             foreach (var w in _wins) Native.DestroyWindow(w);
             _wins.Clear();
             if (_ctl != 0) Native.DestroyWindow(_ctl);
-            if (_fontLine != 0) Native.DeleteObject(_fontLine);
-            if (_fontItalic != 0) Native.DeleteObject(_fontItalic);
-            if (_fontCount != 0) Native.DeleteObject(_fontCount);
             if (_bg != 0) Native.DeleteObject(_bg);
             if (_desk != 0)
             {
                 Native.SetThreadDesktop(orig);
                 Native.CloseDesktop(_desk);
             }
-            _hook = _ctl = _primary = _desk = _fontLine = _fontItalic = _fontCount = _bg = 0;
+            _hook = _ctl = _primary = _desk = _bg = 0;
         }
     }
 
@@ -122,20 +119,9 @@ internal sealed unsafe class BreakDesktop : IDisposable
             if (w == 0) continue;
             _wins.Add(w);
             Native.SetWindowPos(w, Native.HWND_TOPMOST, 0, 0, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOMOVE | Native.SWP_NOACTIVATE | Native.SWP_SHOWWINDOW);
-            if (primary)
-            {
-                _primary = w;
-                _primaryHeight = r.Bottom - r.Top;
-            }
+            if (primary) _primary = w;
         }
         if (_primary == 0 && _wins.Count > 0) _primary = _wins[0];
-        if (_fontLine != 0) Native.DeleteObject(_fontLine);
-        if (_fontItalic != 0) Native.DeleteObject(_fontItalic);
-        if (_fontCount != 0) Native.DeleteObject(_fontCount);
-        var px = Math.Max(24, _primaryHeight / 17);
-        _fontLine = Native.CreateFontW(-px, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Georgia");
-        _fontItalic = Native.CreateFontW(-px, 0, 0, 0, 400, 1, 0, 0, 1, 0, 0, 5, 0, "Georgia");
-        _fontCount = Native.CreateFontW(-Math.Max(14, px / 2), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
     }
 
     void Paint(nint hwnd)
@@ -144,41 +130,24 @@ internal sealed unsafe class BreakDesktop : IDisposable
         var dc = Native.BeginPaint(hwnd, &ps);
         RECT r;
         Native.GetClientRect(hwnd, &r);
-        Native.FillRect(dc, &r, _bg);
         if (hwnd == _primary)
         {
-            Native.SetBkMode(dc, Native.TRANSPARENT);
-            var px = Math.Max(24, r.Bottom / 17);
-            var lh = px * 12 / 10;
-            var left = r.Right / 10;
-            var top = r.Bottom * 22 / 100;
-            var lines = Copy.Lines(Locale.Slovak);
-            for (var i = 0; i < lines.Length; i++)
-            {
-                var (plain, accent) = lines[i];
-                var y = top + i * lh;
-                var x = left;
-                var old = Native.SelectObject(dc, _fontLine);
-                Native.SetTextColor(dc, Native.Rgb(0xEC, 0xE8, 0xE1));
-                var line = new RECT { Left = x, Top = y, Right = r.Right, Bottom = y + lh };
-                Native.DrawTextW(dc, plain, plain.Length, &line, Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_NOCLIP);
-                if (accent.Length > 0)
-                {
-                    SIZE size;
-                    Native.GetTextExtentPoint32W(dc, plain, plain.Length, &size);
-                    Native.SelectObject(dc, _fontItalic);
-                    Native.SetTextColor(dc, Native.Rgb(0xC9, 0xB9, 0x9A));
-                    line.Left = x + size.Cx;
-                    Native.DrawTextW(dc, accent, accent.Length, &line, Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_NOCLIP);
-                }
-                Native.SelectObject(dc, old);
-            }
-            var oldCount = Native.SelectObject(dc, _fontCount);
-            Native.SetTextColor(dc, Native.Rgb(0x7B, 0x75, 0x6B));
-            var cd = Copy.Seconds(Locale.Slovak, Math.Max(0, (_endsAt - Native.UnixNow() + 999) / 1000));
-            var rc = new RECT { Left = left, Top = r.Bottom - r.Bottom * 12 / 100, Right = r.Right, Bottom = r.Bottom };
-            Native.DrawTextW(dc, cd, cd.Length, &rc, Native.DT_SINGLELINE | Native.DT_NOPREFIX | Native.DT_NOCLIP);
-            Native.SelectObject(dc, oldCount);
+            // drawn off screen and copied at once, so the animation does not flicker
+            var mem = Native.CreateCompatibleDC(dc);
+            var bmp = Native.CreateCompatibleBitmap(dc, r.Right, r.Bottom);
+            var old = Native.SelectObject(mem, bmp);
+            var left = Math.Max(0, _endsAt - Native.UnixNow());
+            var done = _total <= 0 ? 0 : Math.Clamp(1.0 - (double)left / _total, 0, 1);
+            PixelArt.Scene(mem, r.Right, r.Bottom, Environment.TickCount64 / 1000.0, Copy.Lines(Locale.Slovak),
+                Copy.Seconds(Locale.Slovak, (left + 999) / 1000), done);
+            Native.BitBlt(dc, 0, 0, r.Right, r.Bottom, mem, 0, 0, Native.SRCCOPY);
+            Native.SelectObject(mem, old);
+            Native.DeleteObject(bmp);
+            Native.DeleteDC(mem);
+        }
+        else
+        {
+            Native.FillRect(dc, &r, _bg);
         }
         Native.EndPaint(hwnd, &ps);
     }
@@ -194,12 +163,7 @@ internal sealed unsafe class BreakDesktop : IDisposable
         // Ctrl+Alt+Del then Cancel returns to the default desktop: take the input back.
         if (!_preview && Native.InputDesktopName() is { } name && name != DesktopName)
             Native.SwitchDesktop(_desk);
-        var sec = (_endsAt - now + 999) / 1000;
-        if (sec != _lastSec)
-        {
-            _lastSec = sec;
-            if (_primary != 0) Native.InvalidateRect(_primary, null, 0);
-        }
+        if (_primary != 0) Native.InvalidateRect(_primary, null, 0);
     }
 
     [UnmanagedCallersOnly]
