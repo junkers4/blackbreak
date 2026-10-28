@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "blackbreak"
-include(":app")
+include(":tools", ":tests")
