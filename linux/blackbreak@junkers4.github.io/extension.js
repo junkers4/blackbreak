@@ -2,7 +2,7 @@ import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import {Scheduler, Phase, WARN_MS} from './scheduler.js';
+import {Scheduler, Phase, WARN_MS, localDayKey} from './scheduler.js';
 import {CallDetector} from './callDetect.js';
 import {Overlay} from './overlay.js';
 import {Notice} from './notice.js';
@@ -10,6 +10,7 @@ import {Indicator} from './indicator.js';
 
 const FAST = GLib.getenv('BLACKBREAK_DEBUG_FAST') === '1';
 const STUCK = GLib.getenv('BLACKBREAK_DEBUG_STUCK') === '1';
+const NO_IDLE = GLib.getenv('BLACKBREAK_DEBUG_NOIDLE') === '1'; // a headless test session has no input
 const SCALE = FAST ? 60 : 1;
 // Calls are watched from this long before the warning is due, and while held.
 const CALL_LEAD_MS = 60_000;
@@ -30,7 +31,7 @@ export default class BlackBreakExtension extends Extension {
         this._overlay = new Overlay();
         this._notice = new Notice();
         this._indicator = new Indicator(this._scheduler,
-            () => this._onPauseChanged(), () => this._openSettings());
+            () => this._onPauseChanged(), () => this._openSettings(), () => this._testBreak());
         Main.panel.addToStatusArea(this.uuid, this._indicator);
         this._sessionId = Main.sessionMode.connect('updated', () => this._onSession());
         this._onSession();
@@ -73,19 +74,23 @@ export default class BlackBreakExtension extends Extension {
         if (!(STUCK && s.phase === Phase.BREAK)) {
             s.update({
                 now,
-                idleMs: global.backend.get_core_idle_monitor().get_idletime(),
+                idleMs: NO_IDLE ? 0 : global.backend.get_core_idle_monitor().get_idletime(),
                 inCall: watch && this._detector.inCall(),
                 inPhoneCall: false,
             });
         }
         if (s.phase === this._phase)
             return;
+        if (this._phase === Phase.BREAK && !STUCK)
+            this._onBreakEnded();
         this._phase = s.phase;
         if (s.phase === Phase.WARNING) {
-            this._notice.show('Break in 10 s');
+            if (this._settings.get_boolean('show-warning'))
+                this._notice.show('Break in 10 s');
         } else if (s.phase === Phase.BREAK) {
             this._notice.hide();
             this._indicator.menu.close();
+            this._overlay.hide(); // a test break may be showing
             // Stuck: a wrong end time, so only the fail-safe clears the screen.
             this._overlay.show(STUCK ? Date.now() + 3_600_000 : s.breakEndsAt);
         } else {
@@ -93,6 +98,16 @@ export default class BlackBreakExtension extends Extension {
             this._overlay.hide();
         }
         this._indicator.refresh();
+    }
+
+    // A break that ran to its end: counted for today, and a soft sound if asked.
+    _onBreakEnded() {
+        const day = localDayKey(Date.now());
+        const n = this._settings.get_string('stats-day') === day ? this._settings.get_int('stats-breaks') : 0;
+        this._settings.set_string('stats-day', day);
+        this._settings.set_int('stats-breaks', n + 1);
+        if (this._settings.get_boolean('end-sound'))
+            global.display.get_sound_player().play_from_theme('complete', 'BlackBreak', null);
     }
 
     _onPauseChanged() {
@@ -108,6 +123,14 @@ export default class BlackBreakExtension extends Extension {
             this._notice.hide();
         }
         this._indicator.container.visible = !locked;
+    }
+
+    // A 5 s look at the break screen; the schedule is not touched.
+    _testBreak() {
+        if (this._scheduler.phase !== Phase.WORK)
+            return;
+        this._indicator.menu.close();
+        this._overlay.show(Date.now() + 5000);
     }
 
     _openSettings() {

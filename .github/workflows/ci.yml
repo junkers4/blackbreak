@@ -15,16 +15,99 @@ jobs:
           node-version: 24
       - run: make -C linux test
 
+  core-asm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang lld qemu-user
+      - run: make -C core test windows QEMU=qemu-aarch64
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: C# layer over the core
+        run: dotnet test windows/Core.Tests
+
   gnome-pack:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gnome-shell libglib2.0-bin
+          sudo apt-get install -y --no-install-recommends gnome-shell gjs libglib2.0-bin
       - run: glib-compile-schemas --strict --dry-run linux/blackbreak@junkers4.github.io/schemas
       - run: make -C linux pack
+      - run: make -C linux test-detector
       - uses: actions/upload-artifact@v4
         with:
           name: blackbreak-gnome
           path: linux/dist/*.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Assemble the core
+        run: |
+          mkdir -p core/build
+          clang --target=x86_64-pc-windows-msvc -c core/x86_64/core.S -o core/build/blackbreak_core.obj
+        shell: bash
+      - run: dotnet publish windows/App -c Release -r win-x64 -p:PublishAot=true -p:Version=0.0.0 -o windows/out
+      - name: Size
+        shell: pwsh
+        run: |
+          $size = (Get-Item windows/out/BlackBreak.exe).Length
+          "BlackBreak.exe is $size bytes"
+          if ($size -gt 15MB) { throw "exe larger than 15 MB" }
+      - name: Smoke
+        shell: pwsh
+        env:
+          BLACKBREAK_DEBUG_FAST: "1"
+        run: |
+          $p = Start-Process -FilePath windows/out/BlackBreak.exe -ArgumentList '--smoke','45','smoke.log' -PassThru -Wait
+          Get-Content smoke.log
+          $want = 'phase warning','phase break','desktop switched','desktop restored','phase work'
+          $got = Get-Content smoke.log
+          $i = 0
+          foreach ($line in $got) { if ($i -lt $want.Count -and $line -eq $want[$i]) { $i++ } }
+          if ($i -lt $want.Count) { throw "smoke log lacks '$($want[$i])' in order" }
+      - name: End-to-end
+        shell: pwsh
+        run: ./windows/test/e2e.ps1 windows/out/BlackBreak.exe
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: break-windows-screenshot
+          path: break-windows.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blackbreak-windows
+          path: windows/out/BlackBreak.exe
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: The smali assembler
+        run: ./gradlew :tools:fetchSmali
+        working-directory: android
+      - name: Build the APK (smali + Java + the AArch64 core)
+        run: ./build.sh debug
+        working-directory: android
+      - name: Size
+        run: |
+          size=$(stat -c %s android/build/blackbreak-debug.apk)
+          echo "blackbreak-debug.apk is $size bytes"
+          [ "$size" -lt 1048576 ]
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blackbreak-android-debug
+          path: android/build/blackbreak-debug.apk

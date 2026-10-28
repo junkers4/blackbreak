@@ -57,9 +57,31 @@ export class CallDetector {
         this._on = s.get_boolean('call-exemption');
         this._mic = s.get_boolean('exempt-mic');
         this._cam = s.get_boolean('exempt-camera');
+        this._fullscreen = s.get_boolean('exempt-fullscreen');
+        this._apps = s.get_boolean('exempt-app-on')
+            ? s.get_strv('exempt-apps').map(a => a.trim().toLowerCase().replace(/\.desktop$/, '')).filter(a => a)
+            : [];
     }
 
+    // True while something the user chose to protect is going on: a call, a
+    // fullscreen window, or a listed app in focus. The scheduler holds the
+    // break (3 hours at most) exactly as it does for a call.
     inCall() {
+        return this._busyWindow() || this._inCall();
+    }
+
+    _busyWindow() {
+        const win = globalThis.global?.display?.focus_window;
+        if (!win)
+            return false;
+        if (this._fullscreen && win.is_fullscreen())
+            return true;
+        const names = [win.get_wm_class(), win.get_gtk_application_id()]
+            .filter(n => n).map(n => n.toLowerCase());
+        return this._apps.some(a => names.some(n => n.includes(a)));
+    }
+
+    _inCall() {
         if (!this._on)
             return false;
         if (this._mic && this._micInUse())

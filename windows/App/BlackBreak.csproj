@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>BlackBreak</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StripSymbols>true</StripSymbols>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>0.0.0</Version>
+  </PropertyGroup>
+  <!-- the assembler core (core/x86_64/core.S), linked into the exe: make -C core windows, or clang -c on Windows -->
+  <ItemGroup>
+    <DirectPInvoke Include="blackbreak_core" />
+    <NativeLibrary Include="$(MSBuildThisFileDirectory)../../core/build/blackbreak_core.obj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Core\BlackBreak.Core.csproj" />
+  </ItemGroup>
+</Project>

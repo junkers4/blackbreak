@@ -7,12 +7,40 @@
       <summary>Wait with the break while in a call</summary>
     </key>
     <key name="exempt-mic" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>A microphone in use counts as a call</summary>
     </key>
     <key name="exempt-camera" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>A camera in use counts as a call</summary>
+    </key>
+    <key name="exempt-fullscreen" type="b">
+      <default>false</default>
+      <summary>A fullscreen window in focus (a game, a video) holds the break</summary>
+    </key>
+    <key name="exempt-app-on" type="b">
+      <default>false</default>
+      <summary>The chosen app holds the break while its window is in focus</summary>
+    </key>
+    <key name="exempt-apps" type="as">
+      <default>[]</default>
+      <summary>The chosen app (desktop file id)</summary>
+    </key>
+    <key name="show-warning" type="b">
+      <default>true</default>
+      <summary>Show "Break in 10 s" before a break</summary>
+    </key>
+    <key name="end-sound" type="b">
+      <default>false</default>
+      <summary>Play a soft sound when a break ends</summary>
+    </key>
+    <key name="stats-day" type="s">
+      <default>''</default>
+      <summary>Local day of the break count</summary>
+    </key>
+    <key name="stats-breaks" type="i">
+      <default>0</default>
+      <summary>Breaks taken on that day</summary>
     </key>
     <key name="last-pause-day" type="s">
       <default>''</default>

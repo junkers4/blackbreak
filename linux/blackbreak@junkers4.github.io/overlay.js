@@ -1,4 +1,4 @@
-import Clutter from 'gi://Clutter';
+import Cairo from 'gi://cairo';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
@@ -6,19 +6,25 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {FAILSAFE_MS} from './scheduler.js';
 
-const LINES = [
-    'Look at something far away — at least 6 m (20 ft).',
-    'Stretch your arms and your back.',
-    'Sit up straight, shoulders back.',
-    'Slowly turn and tilt your head to stretch your neck.',
-];
+import {LINES, seconds} from './copy.js';
+import {PAL, PixelText, ROWS, LEADING, rect} from './pixel.js';
 
-// The break screen: black over the whole stage, with a modal grab.
+// The break screen is a 320 x 180 picture, scaled by a whole number and
+// centred on the primary monitor.
+const W = 320, H = 180, SEGMENTS = 15;
+const TEXT_PX = 2;
+
+// The break screen: warm black over the whole stage, a red pixel frame with
+// the words, the seconds left and a segmented bar, with a modal grab.
 export class Overlay {
     show(endsAtMs) {
         if (this._widget || Main.sessionMode.isLocked)
             return;
         this._endsAt = endsAtMs;
+        this._total = Math.max(1, endsAtMs - Date.now());
+        this._f = 1;
+        this._ox = this._oy = 0;
+        this._left = 0;
         // Armed first, so nothing below can leave the screen black.
         this._failsafeId = GLib.timeout_add(GLib.PRIORITY_HIGH, FAILSAFE_MS, () => {
             this._failsafeId = 0;
@@ -30,10 +36,7 @@ export class Overlay {
             reactive: true,
             can_focus: true,
         });
-        this._box = new St.Bin({
-            child: this._buildText(),
-        });
-        this._widget.add_child(this._box);
+        this._buildText();
         Main.layoutManager.addTopChrome(this._widget);
         this._monitorsId = Main.layoutManager.connect('monitors-changed',
             () => this._resize());
@@ -59,7 +62,7 @@ export class Overlay {
         }
         this._grab = null;
         this._widget?.destroy();
-        this._widget = this._box = this._countdown = null;
+        this._widget = this._text = this._countdown = this._canvas = this._lines = null;
     }
 
     destroy() {
@@ -67,33 +70,61 @@ export class Overlay {
     }
 
     _buildText() {
-        const box = new St.BoxLayout({
-            style_class: 'blackbreak-text',
-            orientation: Clutter.Orientation.VERTICAL,
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
-            x_expand: true,
-            y_expand: true,
+        this._canvas = new St.DrawingArea();
+        this._canvas.connect('repaint', () => this._paint());
+        this._widget.add_child(this._canvas);
+        this._text = new St.Widget();
+        this._lines = LINES.map(([plain, accent]) => {
+            const line = new PixelText(TEXT_PX, PAL.white, accent);
+            line.text = plain;
+            this._text.add_child(line);
+            return line;
         });
-        for (const text of LINES)
-            box.add_child(new St.Label({style_class: 'blackbreak-line', text}));
-        this._countdown = new St.Label({
-            style_class: 'blackbreak-countdown',
-            x_align: Clutter.ActorAlign.CENTER,
-        });
-        box.add_child(this._countdown);
-        return box;
+        this._countdown = new PixelText(1, PAL.dim);
+        this._widget.add_child(this._text);
+        this._widget.add_child(this._countdown);
     }
 
     _resize() {
         this._widget.set_position(0, 0);
         this._widget.set_size(global.stage.width, global.stage.height);
-        // The text sits in the middle of the primary monitor.
+        this._canvas.set_position(0, 0);
+        this._canvas.set_size(global.stage.width, global.stage.height);
         const m = Main.layoutManager.primaryMonitor;
-        if (m) {
-            this._box.set_position(m.x, m.y);
-            this._box.set_size(m.width, m.height);
-        }
+        if (!m)
+            return;
+        const f = Math.max(1, Math.floor(Math.min(m.width / W, m.height / H)));
+        this._f = f;
+        this._ox = m.x + Math.floor((m.width - W * f) / 2);
+        this._oy = m.y + Math.floor((m.height - H * f) / 2);
+        let y = 30;
+        this._text.set_position(this._ox, this._oy);
+        this._lines.forEach((line, i) => {
+            line.setPx(TEXT_PX * f);
+            line.set_position(24 * f, y * f);
+            y += (LINES[i][1] ? LEADING + ROWS : ROWS) * TEXT_PX + 14;
+        });
+        this._countdown.setPx(f);
+        this._countdown.set_position(this._ox + 24 * f, this._oy + 148 * f);
+        this._canvas.queue_repaint();
+    }
+
+    _paint() {
+        const cr = this._canvas.get_context();
+        cr.setAntialias(Cairo.Antialias.NONE);
+        rect(cr, PAL.bg, 0, 0, global.stage.width, global.stage.height);
+        const f = this._f, ox = this._ox, oy = this._oy;
+        const u = n => n * f;
+        rect(cr, PAL.red, ox + u(6), oy + u(6), u(W - 12), u(2));
+        rect(cr, PAL.red, ox + u(6), oy + u(H - 8), u(W - 12), u(2));
+        rect(cr, PAL.red, ox + u(6), oy + u(6), u(2), u(H - 12));
+        rect(cr, PAL.red, ox + u(W - 8), oy + u(6), u(2), u(H - 12));
+        // one segment per two seconds of a 30 s break, filling as the break passes
+        const done = Math.min(1, Math.max(0, 1 - (this._endsAt - Date.now()) / this._total));
+        const lit = Math.round(done * SEGMENTS);
+        for (let i = 0; i < SEGMENTS; i++)
+            rect(cr, i < lit ? PAL.green : '#1d2a1d', ox + u(150 + i * 10), oy + u(150), u(8), u(7));
+        cr.$dispose();
     }
 
     // Updated on each whole second left; hides itself at the end.
@@ -103,7 +134,9 @@ export class Overlay {
             this.hide();
             return;
         }
-        this._countdown.text = String(Math.ceil(left / 1000));
+        this._left = Math.ceil(left / 1000);
+        this._countdown.text = seconds(this._left);
+        this._canvas.queue_repaint();
         this._tickId = GLib.timeout_add(GLib.PRIORITY_HIGH, left % 1000 || 1000, () => {
             this._tickId = 0;
             this._updateCountdown();

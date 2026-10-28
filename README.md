@@ -1,78 +1,100 @@
 # BlackBreak
 
-A 20-20-20 break enforcer. Every 20 minutes the screen goes black for 30
-seconds, and nothing you press or click does anything until the break is
-over. Other break tools let you skip or postpone a break when it arrives,
-so in practice it gets skipped. BlackBreak has no skip button: you decide
-in advance, never in the moment.
+**20-30-20:** every 20 minutes the screen is covered for 30 seconds, so you look at something about
+20 feet (6 m) away. There is no skip button: you decide in advance (pause, or wait during a call), never in the moment.
 
-During a break the screen says:
+<p>
+<img src="docs/images/linux-break.png" height="260" alt="The rest screen on Linux">
+<img src="docs/images/android-rest.png" height="260" alt="The rest screen on Android">
+</p>
 
-    Look at something far away — at least 6 m (20 ft).
-    Stretch your arms and your back.
-    Sit up straight, shoulders back.
-    Slowly turn and tilt your head to stretch your neck.
+During the break you see three plain lines, the seconds left and a progress bar, in English or Slovak by your
+system language:
 
-Ten seconds before a break a small notice says `Break in 10 s`. If you
-have been idle for 5 minutes, that counts as rest and the 20 minutes
-start again. After a restart or login a fresh interval begins.
+    Rest your eyes.
+    Look out of the window, as far as you can.
+    Then stretch.
 
-## Install (GNOME 50, Wayland)
+Ten seconds before a break a small box says `Break in 10 s`. Five idle minutes count as rest and the
+20 minutes start again. After a restart a fresh interval begins. The look is old-school pixel art.
 
-Download `blackbreak-linux-gnome-vX.Y.Z.zip` from the latest release,
-then:
+| Platform | Status | Where it lives |
+|---|---|---|
+| Linux (GNOME 50, Wayland) | available | top bar eye icon, menu and settings |
+| Windows 10 and 11 | available | tray icon and menu |
+| Android 8 or newer | available | one app screen |
+| iOS | later | needs a paid Apple developer account and Apple's approval of the Screen Time entitlement |
+
+## Linux
+
+The eye icon in the top bar opens the menu; `Settings` holds the options.
+
+<p>
+<img src="docs/images/linux-menu.png" height="240" alt="The top bar menu">
+<img src="docs/images/linux-settings.png" height="240" alt="The settings window">
+</p>
+
+Download `blackbreak-linux-gnome-vX.Y.Z.zip` from the latest release, then:
 
     gnome-extensions install blackbreak-linux-gnome-vX.Y.Z.zip
 
-Log out and back in, then:
-
-    gnome-extensions enable blackbreak@junkers4.github.io
-
+Log out and back in, then `gnome-extensions enable blackbreak@junkers4.github.io`.
 From a checkout, `make -C linux install` does the same.
 
-## Releases
+## Windows
 
-Builds are on the GitHub Releases page, each with a `SHA256SUMS` file
-(check with `sha256sum -c --ignore-missing SHA256SUMS`). Versions follow SemVer (`vX.Y.Z`
-tags on `main`); the notes of each release come from `CHANGELOG.md`.
+The eye sits in the notification area (bottom right, next to the clock); right- or left-click opens the menu.
+The break covers every monitor, the primary one shows the pixel scene.
 
-## Pause
+<p>
+<img src="docs/images/windows-tray.png" height="200" alt="Tray icon and menu (rendering)">
+<img src="docs/images/windows-break.png" height="200" alt="The rest screen (rendering)">
+</p>
 
-The alarm-clock icon in the top bar has a menu: pause for 30 minutes, 1, 2 or 3
-hours. You get one pause per day (local time), and cancelling it early
-still uses it. Pausing only works in a normal work interval, not during
-the warning or a break.
+*These two pictures are renderings made from the app's drawing code; the pixel look has not been run on a real
+Windows PC yet.*
 
-## Calls
+Download `blackbreak-windows-x64-vX.Y.Z.zip`, unzip it anywhere and run `BlackBreak.exe` once. It starts with
+Windows from then on. SmartScreen will warn because the exe is unsigned: choose "More info", then "Run anyway".
+Two copies of the exe keep each other alive, and a break that was running continues for what was left of it.
+`Quit` is not in the menu on purpose.
 
-Off by default. In Settings (same menu) you can let a break wait while the microphone
-or the camera is in use. A break waits at most 3 hours. A call that starts
-during the warning does not stop the break. Settings changed during the
-warning or a break take effect in the next work interval.
+## Android
+
+The app has one screen: the next break, pause buttons and the options. Download `blackbreak-android-vX.Y.Z.apk`,
+open the app and tap `Allow BlackBreak to show over other apps`. That is the only permission needed (plus
+notifications, for the quiet "BlackBreak is on" entry). No accessibility service. The break is a window drawn over
+other apps; it starts again after a restart. A phone call always waits.
+
+<p>
+<img src="docs/images/android-settings.png" height="420" alt="The app screen">
+</p>
+
+## Pause and options
+
+- **Pause:** 30 minutes, 1, 2 or 3 hours, once per day (local time). Cancelling early still uses it. Only in a normal work interval.
+- **Calls:** a break waits (3 hours at most) while a call is going on: microphone or camera on Linux and Windows, any call on Android.
+- **Linux and Android extras, all off by default:** wait while a fullscreen window or a chosen app is in focus (Linux); wait while music or video plays, a short buzz at the end (Android). Both can hide the 10 s warning, offer a 5 s `Test break`, and show the breaks taken today.
 
 ## What it cannot block
 
-Switching to a text console (Ctrl+Alt+F3) and rebooting still work. If
-anything goes wrong, the break screen removes itself after 35 seconds.
+Windows: the Ctrl+Alt+Del screen, Win+L, signing out and the power button. Android: the power button, Emergency SOS,
+a forced reboot and the system gestures (the break stays on top of them). Linux: switching to a text console and
+rebooting. If anything goes wrong, the break screen removes itself after 35 seconds.
 
-## Platforms
+## Releases
 
-| Platform | Status |
-|---|---|
-| Linux (GNOME) | available |
-| Windows | next |
-| Android | next |
-| iOS | later: needs a paid Apple developer account, a Mac and Apple's approval of the Screen Time entitlement |
+Builds are on the GitHub Releases page with a `SHA256SUMS` file (`sha256sum -c --ignore-missing SHA256SUMS`).
+Versions follow SemVer; release notes come from `CHANGELOG.md`.
 
 ## Development
 
-    make -C linux test    # scheduler and shared scenarios (node 24)
-    make -C linux pack    # zip in linux/dist/
+    make -C linux test-all        # scheduler, detector and headless GNOME tests
+    android/build.sh debug        # APK from smali + Java, no Gradle
+    dotnet test windows/Core.Tests
 
-The timing rules live in `linux/blackbreak@junkers4.github.io/scheduler.js`
-and are pinned by `spec/scenarios.json` and `spec/traces.json` (format in
-`spec/README.md`; tests cover both), which the other platforms will reuse. Requirements and their tests: `docs/requirements.md`. Manual
-checks: `linux/test/manual-checklist.md`.
+The timing rules are written once in assembler (`core/`) and pinned by `spec/`; requirements and their tests are in
+`docs/requirements.md`.
 
 ## License
 

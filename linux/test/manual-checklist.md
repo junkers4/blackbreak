@@ -5,8 +5,7 @@ Fast runs: start a nested or headless shell with `BLACKBREAK_DEBUG_FAST=1`
 
 ## Break screen
 - [ ] The break covers every monitor and the top bar; solid black.
-- [ ] The four lines are light grey, centered on the primary monitor.
-- [ ] The countdown counts down under them, dimmer.
+- [ ] A red pixel frame with three white pixel-font lines (the middle one with a gold second row), the seconds left in grey bottom left and a 15-segment bar that fills over the break.
 - [ ] The break ends after 30 s.
 
 ## No input

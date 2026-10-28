@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- the assembler core as a Linux shared library, for running the tests on Linux (make -C core windows) -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)../../core/build/libblackbreak_core.so')">
+    <None Include="$(MSBuildThisFileDirectory)../../core/build/libblackbreak_core.so" Link="libblackbreak_core.so" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
