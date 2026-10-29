@@ -32,8 +32,8 @@ check 'the black screen covers every monitor (the whole stage)' \
     "$X._overlay._widget.width === global.stage.width && $X._overlay._widget.height === global.stage.height"
 check 'two monitors are present' "Main.layoutManager.monitors.length === 2"
 check 'input is grabbed (modal, no shell actions)' "Main.modalCount > 0 && Main.actionMode === 0"
-check 'three lines of text' "$X._overlay._text.get_n_children() === 3"
-check 'the seconds left are shown' "/^[0-9]+ (seconds?|sekúnd|sekundy|sekunda)\$/.test($X._overlay._countdown.text)"
+check 'three lines of text' "$X._overlay._drawn.lines === 3"
+check 'the seconds left are shown' "/^[0-9]+ (seconds?|sekúnd|sekundy|sekunda)\$/.test($X._overlay._drawn.seconds)"
 check 'pause items are disabled' "$X._indicator._pauseItems.every(i => !i.sensitive)"
 check 'settings are disabled' "!$X._indicator._settings.sensitive"
 key Super_L

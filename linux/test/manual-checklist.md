@@ -5,7 +5,7 @@ Fast runs: start a nested or headless shell with `BLACKBREAK_DEBUG_FAST=1`
 
 ## Break screen
 - [ ] The break covers every monitor and the top bar; solid black.
-- [ ] A red pixel frame with three white pixel-font lines (the middle one with a gold second row), the seconds left in grey bottom left and a 15-segment bar that fills over the break.
+- [ ] On the primary monitor: stars, the big pixel eye that looks left, right, up and down and blinks, three white pixel-font lines (the middle one with a gold second row), the seconds left in grey and a 15-segment bar that fills, a far sun and a drifting horizon of three ridges, a red pixel frame. The other monitors are plain black.
 - [ ] The break ends after 30 s.
 
 ## No input
