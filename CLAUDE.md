@@ -14,8 +14,10 @@
   `MainActivity`, `Pixel`) are Java in `app/src/main/java`, dexed as `classes2.dex`; `android/stubs`
   are compile-only stand-ins for the smali classes. The old Kotlin sources are not built any more.
 - Android options (all off unless noted): wait during a call, wait while music/video plays, show
-  "Break in 10 s" (on), short buzz at the end, Test break, breaks taken today. They live in
-  `Options.java`; the smali service asks `Options` in `tick`.
+  "Break in 10 s" (on), short buzz at the end, Test break, breaks taken today, apps a break never
+  covers (Waze, Maps...: `Apps.java`, Usage access; a chosen app on screen counts as a phone call).
+  They live in `Options.java`; the smali service asks `Options` in `tick`. `Keep.java` saves the
+  scheduler state so a service restart keeps the interval (5 min gap = rest, as the core says).
 - Android needs no accessibility service: `BreakService` is a foreground service (quiet min-importance
   notification, `Notifier.java`) and the break is a `TYPE_APPLICATION_OVERLAY` window, so the one
   permission is "show over other apps". `BootReceiver` restarts it after boot and updates.

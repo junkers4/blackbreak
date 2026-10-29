@@ -26,6 +26,12 @@ off and on. Real timings: release build, or no property.
 ## Screen off, reboot
 - [ ] Screen off for 5 minutes or more counts as rest (the next break is 20 min after the screen came on).
 - [ ] Reboot gives a fresh interval and keeps the day's pause (no second pause that day).
+- [ ] Force stop and reopen within 5 minutes: `Next break at` keeps the same time (the interval is saved).
+
+## Apps
+- [ ] `Apps` lists the launcher apps, navigation first; choosing Waze shows `Allow usage access` until it is granted.
+- [ ] Waze on screen when the break is due: no warning, no break, status `The break waits for Waze`; leaving Waze gives the warning and the break.
+- [ ] Waze in picture-in-picture also holds the break; Waze opened during the 10 s warning: the break screen does not cover it.
 
 ## Pause and setup
 - [ ] The buttons `Pause 30 min` … `Pause 3 hours` work; the status shows `Paused until HH:MM`; `Cancel pause` starts a fresh interval.

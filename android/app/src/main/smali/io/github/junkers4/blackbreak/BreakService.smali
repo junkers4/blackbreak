@@ -132,6 +132,9 @@
     iget-wide v3, p0, Lio/github/junkers4/blackbreak/BreakService;->scale:D
     invoke-direct/range {v0 .. v6}, Lio/github/junkers4/blackbreak/Scheduler;-><init>(JDJ)V
     iput-object v0, p0, Lio/github/junkers4/blackbreak/BreakService;->scheduler:Lio/github/junkers4/blackbreak/Scheduler;
+    # a restart by the system goes on with the saved interval (Keep)
+    iget-object v0, v0, Lio/github/junkers4/blackbreak/Scheduler;->buf:Ljava/nio/ByteBuffer;
+    invoke-static {p0, v0}, Lio/github/junkers4/blackbreak/Keep;->restore(Landroid/content/Context;Ljava/nio/ByteBuffer;)V
 
     # screen on and off
     new-instance v0, Lio/github/junkers4/blackbreak/BreakService$Screen;
@@ -188,6 +191,9 @@
     move-result v8
     invoke-static {v4, v2, v3, v7, v8}, Lio/github/junkers4/blackbreak/BreakService;->nativeTick(Lio/github/junkers4/blackbreak/Scheduler;JII)J
     move-result-wide v5                          # the end of the break to show, or NONE (v5,v6)
+    iget-object v7, v4, Lio/github/junkers4/blackbreak/Scheduler;->buf:Ljava/nio/ByteBuffer;
+    const/4 v8, 0x0
+    invoke-static {p0, v7, v2, v3, v8}, Lio/github/junkers4/blackbreak/Keep;->save(Landroid/content/Context;Ljava/nio/ByteBuffer;JZ)V
 
     # the warning
     invoke-virtual {v4}, Lio/github/junkers4/blackbreak/Scheduler;->phase()I
@@ -314,6 +320,10 @@
     return-void
     :off
     iput-wide v0, p0, Lio/github/junkers4/blackbreak/BreakService;->screenOffAt:J
+    iget-object v2, p0, Lio/github/junkers4/blackbreak/BreakService;->scheduler:Lio/github/junkers4/blackbreak/Scheduler;
+    iget-object v2, v2, Lio/github/junkers4/blackbreak/Scheduler;->buf:Ljava/nio/ByteBuffer;
+    const/4 v3, 0x1
+    invoke-static {p0, v2, v0, v1, v3}, Lio/github/junkers4/blackbreak/Keep;->save(Landroid/content/Context;Ljava/nio/ByteBuffer;JZ)V
     iget-object v2, p0, Lio/github/junkers4/blackbreak/BreakService;->handler:Landroid/os/Handler;
     iget-object v3, p0, Lio/github/junkers4/blackbreak/BreakService;->tickRunnable:Ljava/lang/Runnable;
     invoke-virtual {v2, v3}, Landroid/os/Handler;->removeCallbacks(Ljava/lang/Runnable;)V
@@ -460,9 +470,17 @@
 
 # no views, no callbacks and no receiver outlive the service
 .method private shutdown()V
-    .locals 2
+    .locals 4
     const/4 v0, 0x0
     sput-object v0, Lio/github/junkers4/blackbreak/BreakService;->instance:Lio/github/junkers4/blackbreak/BreakService;
+    iget-object v0, p0, Lio/github/junkers4/blackbreak/BreakService;->scheduler:Lio/github/junkers4/blackbreak/Scheduler;
+    if-eqz v0, :saved
+    iget-object v0, v0, Lio/github/junkers4/blackbreak/Scheduler;->buf:Ljava/nio/ByteBuffer;
+    invoke-static {}, Ljava/lang/System;->currentTimeMillis()J
+    move-result-wide v1
+    const/4 v3, 0x1
+    invoke-static {p0, v0, v1, v2, v3}, Lio/github/junkers4/blackbreak/Keep;->save(Landroid/content/Context;Ljava/nio/ByteBuffer;JZ)V
+    :saved
     iget-object v0, p0, Lio/github/junkers4/blackbreak/BreakService;->handler:Landroid/os/Handler;
     if-eqz v0, :handler_done
     const/4 v1, 0x0

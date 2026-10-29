@@ -74,7 +74,7 @@ other apps; it starts again after a restart. A phone call always waits.
 
 - **Pause:** 30 minutes, 1, 2 or 3 hours, once per day (local time). Cancelling early still uses it. Only in a normal work interval.
 - **Calls:** a break waits (3 hours at most) while a call is going on: microphone or camera on Linux and Windows, any call on Android.
-- **Linux and Android extras, all off by default:** wait while a fullscreen window or a chosen app is in focus (Linux); wait while music or video plays, a short buzz at the end (Android). Both can hide the 10 s warning, offer a 5 s `Test break`, and show the breaks taken today.
+- **Linux and Android extras, all off by default:** wait while a fullscreen window or a chosen app is in focus (Linux); wait while music or video plays, apps a break never covers while they are on screen (navigation such as Waze or Maps; needs Usage access), a short buzz at the end (Android). Both can hide the 10 s warning, offer a 5 s `Test break`, and show the breaks taken today.
 
 ## What it cannot block
 

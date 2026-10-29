@@ -24,13 +24,28 @@ public final class Options {
         return prefs(c).getBoolean(WARNING, true);
     }
 
-    /** The audio mode handed to the core: music or video playing counts as a call when asked. */
+    /** What a due break waits for now ("Waze", "music or video", "a call"), or null; for the app screen. */
+    static volatile String busy;
+
+    /**
+     * The audio mode handed to the core. A chosen app on screen counts as a phone call: the break
+     * waits for it and its screen never covers it. Music or video playing counts as a call when asked.
+     */
     public static int mode(Context c, int mode) {
+        String app = Apps.onScreen(c, System.currentTimeMillis());
+        if (app != null) {
+            busy = app;
+            return AudioManager.MODE_IN_CALL;
+        }
         if (prefs(c).getBoolean(MEDIA, false)) {
             AudioManager am = (AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
-            if (am != null && am.isMusicActive())
+            if (am != null && am.isMusicActive()) {
+                busy = "music or video";
                 return AudioManager.MODE_IN_COMMUNICATION;
+            }
         }
+        busy = mode == AudioManager.MODE_RINGTONE || mode == AudioManager.MODE_IN_CALL
+            || mode == AudioManager.MODE_IN_COMMUNICATION ? "a call" : null;
         return mode;
     }
 

@@ -1,4 +1,5 @@
-// The one screen, in pixels: status, the pause buttons, the call switch and the setup step.
+// The one screen, in pixels: status, the pause buttons, the call switch, the apps a break never
+// covers, and the setup steps.
 package io.github.junkers4.blackbreak;
 
 import android.app.Activity;
@@ -24,7 +25,9 @@ public final class MainActivity extends Activity {
     private static final long MENU_PAUSE = 1, MENU_CANCEL = 2, MENU_SETTINGS = 4;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private Item status, setup, cancel, call, media, test, today;
+    private Item status, setup, cancel, call, media, apps, usage, test, today;
+    private LinearLayout appList;
+    private final List<Item> appRows = new ArrayList<>();
     private final List<Item> toggles = new ArrayList<>();
     private final List<Item> pauses = new ArrayList<>();
     private int unit;
@@ -98,6 +101,37 @@ public final class MainActivity extends Activity {
         media = toggle(Options.MEDIA, "Wait while music or video is playing", Item.SINGLE);
         column.addView(media, lp(gap));
 
+        column.addView(new Item(this, "Apps", Pixel.GOLD, Item.HEAD), lp(gap / 2));
+        apps = new Item(this, "", Pixel.WHITE, Item.ROW);
+        apps.pos = Item.SINGLE;
+        apps.action = () -> {
+            if (appList.getVisibility() == View.VISIBLE) {
+                appList.setVisibility(View.GONE);
+            } else {
+                if (appList.getChildCount() == 0)
+                    listApps();
+                appList.setVisibility(View.VISIBLE);
+            }
+            refresh();
+        };
+        column.addView(apps, lp(gap / 2));
+        appList = new LinearLayout(this);
+        appList.setOrientation(LinearLayout.VERTICAL);
+        appList.setVisibility(View.GONE);
+        column.addView(appList, lp(gap / 2));
+        usage = new Item(this, "Allow usage access, so BlackBreak knows which app is on screen", Pixel.GOLD, Item.ROW);
+        usage.pos = Item.SINGLE;
+        usage.action = () -> {
+            try {
+                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS,
+                    android.net.Uri.parse("package:" + getPackageName())));
+            } catch (RuntimeException e) {
+                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+            }
+        };
+        column.addView(usage, lp(gap / 2));
+        column.addView(new Item(this, "While a chosen app is on screen, the break waits for it and never covers it. Good for navigation.", Pixel.DIM, Item.PLAIN), lp(gap));
+
         column.addView(new Item(this, "Reminders", Pixel.GOLD, Item.HEAD), lp(gap / 2));
         column.addView(toggle(Options.WARNING, "Show Break in 10 s before a break", Item.FIRST), lp(0));
         column.addView(toggle(Options.VIBRATE, "Short buzz when a break ends", Item.LAST), lp(gap));
@@ -141,6 +175,25 @@ public final class MainActivity extends Activity {
         return t;
     }
 
+    // A switch row per app with a launcher icon, navigation apps first.
+    private void listApps() {
+        List<String> pkgs = Apps.listable(this);
+        for (int i = 0; i < pkgs.size(); i++) {
+            final String pkg = pkgs.get(i);
+            Item t = new Item(this, Apps.label(this, pkg), Pixel.WHITE, Item.SWITCH);
+            t.pos = pkgs.size() == 1 ? Item.SINGLE : i == 0 ? Item.FIRST : i == pkgs.size() - 1 ? Item.LAST : Item.MIDDLE;
+            t.key = pkg;
+            t.action = () -> {
+                t.checked = !t.checked;
+                Apps.choose(this, pkg, t.checked);
+                t.invalidate();
+                refresh();
+            };
+            appRows.add(t);
+            appList.addView(t, lp(0));
+        }
+    }
+
     private static LinearLayout.LayoutParams lp(int bottom) {
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
         p.bottomMargin = bottom;
@@ -175,6 +228,13 @@ public final class MainActivity extends Activity {
         BreakService svc = BreakService.instance;
         DateFormat clock = DateFormat.getTimeInstance(DateFormat.SHORT);
         setup.setVisibility(allowed() ? View.GONE : View.VISIBLE);
+        List<String> names = new ArrayList<>();
+        for (String pkg : Apps.chosen(this))
+            names.add(Apps.label(this, pkg));
+        java.util.Collections.sort(names, String.CASE_INSENSITIVE_ORDER);
+        apps.setText(appList.getVisibility() == View.VISIBLE ? "Done"
+            : names.isEmpty() ? "Choose apps a break never covers" : "Never covers: " + android.text.TextUtils.join(", ", names));
+        usage.setVisibility(!names.isEmpty() && !Apps.allowed(this) ? View.VISIBLE : View.GONE);
         if (svc == null) {
             status.setText(allowed() ? "BlackBreak is starting" : "BlackBreak is off");
             for (Item p : pauses)
@@ -192,6 +252,8 @@ public final class MainActivity extends Activity {
             status.setText("Paused until " + clock.format(new Date(Native.get(s.buf, 5))));
         else if (phase == 2)
             status.setText("Break in progress");
+        else if (svc.held() && Options.busy != null)
+            status.setText("The break waits for " + Options.busy);
         else
             status.setText("Next break at " + clock.format(new Date(Native.get(s.buf, 2))));
         long menu = Native.menu(s.buf);
@@ -203,6 +265,8 @@ public final class MainActivity extends Activity {
         call.setEnabled(settings && !svc.held());
         media.setEnabled(settings && !svc.held());
         test.setEnabled(phase == 0);
+        for (Item a : appRows)
+            a.setEnabled(settings);
         syncSwitches();
     }
 
@@ -217,6 +281,14 @@ public final class MainActivity extends Activity {
             }
         }
         updatingSwitch = false;
+        java.util.Set<String> chosen = Apps.chosen(this);
+        for (Item a : appRows) {
+            boolean on = chosen.contains(a.key);
+            if (a.checked != on) {
+                a.checked = on;
+                a.invalidate();
+            }
+        }
         today.setText("Breaks taken: " + Options.breaksToday(this));
     }
 
