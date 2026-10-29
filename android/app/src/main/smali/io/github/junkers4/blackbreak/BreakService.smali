@@ -132,8 +132,19 @@
     iget-wide v3, p0, Lio/github/junkers4/blackbreak/BreakService;->scale:D
     invoke-direct/range {v0 .. v6}, Lio/github/junkers4/blackbreak/Scheduler;-><init>(JDJ)V
     iput-object v0, p0, Lio/github/junkers4/blackbreak/BreakService;->scheduler:Lio/github/junkers4/blackbreak/Scheduler;
-    # a restart by the system goes on with the saved interval (Keep)
     iget-object v0, v0, Lio/github/junkers4/blackbreak/Scheduler;->buf:Ljava/nio/ByteBuffer;
+    # debug builds: setprop debug.blackbreak.work 10 means a break after 10 s of work
+    invoke-virtual {p0}, Landroid/content/Context;->getApplicationInfo()Landroid/content/pm/ApplicationInfo;
+    move-result-object v1
+    iget v1, v1, Landroid/content/pm/ApplicationInfo;->flags:I
+    and-int/lit8 v1, v1, 0x2
+    if-eqz v1, :work_done
+    const-string v1, "debug.blackbreak.work"
+    invoke-direct {p0, v1}, Lio/github/junkers4/blackbreak/BreakService;->getprop(Ljava/lang/String;)Ljava/lang/String;
+    move-result-object v1
+    invoke-static {v0, v1}, Lio/github/junkers4/blackbreak/Keep;->work(Ljava/nio/ByteBuffer;Ljava/lang/String;)V
+    :work_done
+    # a restart by the system goes on with the saved interval (Keep)
     invoke-static {p0, v0}, Lio/github/junkers4/blackbreak/Keep;->restore(Landroid/content/Context;Ljava/nio/ByteBuffer;)V
 
     # screen on and off
@@ -252,7 +263,7 @@
     invoke-static {v10, v11}, Ljava/lang/Math;->round(D)J
     move-result-wide v10
     sub-long v10, v5, v10                         # start
-    const-wide/16 v12, 0x88b8                     # 35000
+    const-wide/32 v12, 0x88b8                     # 35000
     add-long/2addr v10, v12
     sub-long/2addr v10, v2
     const-wide/16 v12, 0x1

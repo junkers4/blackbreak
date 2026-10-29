@@ -3,6 +3,9 @@
 Fast runs need a debug build: `adb shell setprop debug.blackbreak.fast 6`
 (scale 6: 200 s work, 5 s break; `1` means scale 60), then turn the service
 off and on. Real timings: release build, or no property.
+A short work interval with the real 30 s break: `adb shell setprop debug.blackbreak.work 10`
+(a break after 10 s of work), then `adb shell am force-stop io.github.junkers4.blackbreak` and open the app.
+Test over an ordinary app (Calculator): Settings and the notification shade hide every overlay.
 
 ## Break screen
 - [ ] The break covers the status bar and the navigation bar; solid black, also around a camera cutout.

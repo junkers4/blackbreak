@@ -25,7 +25,8 @@ public final class Apps {
     static final List<String> NAVIGATION = Arrays.asList(
         "com.waze", "com.google.android.apps.maps", "com.google.android.projection.gearhead",
         "com.sygic.aura", "com.here.app.maps", "net.osmand", "net.osmand.plus", "cz.seznam.mapy",
-        "com.mapfactor.navigator", "com.tomtom.gplay.navapp", "app.organicmaps", "com.mapswithme.maps.pro");
+        "com.mapfactor.navigator", "com.tomtom.gplay.navapp", "app.organicmaps", "com.mapswithme.maps.pro",
+        "us.spotco.maps");
 
     private static final long HISTORY_MS = 6 * 3600_000L, OVERLAP_MS = 2000;
     private static final int RESUMED = 1, PAUSED = 2, STOPPED = 23;

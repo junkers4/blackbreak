@@ -9,7 +9,12 @@ import android.provider.Settings;
 public final class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (Settings.canDrawOverlays(context))
+        if (!Settings.canDrawOverlays(context))
+            return;
+        try {
             context.startForegroundService(new Intent(context, BreakService.class));
+        } catch (IllegalStateException e) {
+            // a start from the background the system refuses: no crash, the app screen starts it
+        }
     }
 }

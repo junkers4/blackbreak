@@ -18,6 +18,9 @@
   covers (Waze, Maps...: `Apps.java`, Usage access; a chosen app on screen counts as a phone call).
   They live in `Options.java`; the smali service asks `Options` in `tick`. `Keep.java` saves the
   scheduler state so a service restart keeps the interval (5 min gap = rest, as the core says).
+  Debug runs: `setprop debug.blackbreak.work 10` = a break after 10 s of work, 30 s break.
+- smali: `const/16` and `const-wide/16` hold -32768..32767 only; 35000 needs `const-wide/32`
+  (a wrong one made the fail-safe hide every break after 1 ms).
 - Android needs no accessibility service: `BreakService` is a foreground service (quiet min-importance
   notification, `Notifier.java`) and the break is a `TYPE_APPLICATION_OVERLAY` window, so the one
   permission is "show over other apps". `BootReceiver` restarts it after boot and updates.
