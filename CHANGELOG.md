@@ -5,6 +5,10 @@ and versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-11
+
+Pixel-art look on every platform: Linux, Windows 10 and 11, Android 8 or newer.
+
 - Windows: the same pixel look (animated rest scene, pixel warning, eye icon); written without a Windows test run.
 - Android: the same pixel look (animated rest screen with an eye and a horizon, warning, app screen, eye icon), built by `android/build.sh`. No accessibility service: a foreground service and a window over other apps. New options: wait while music or video plays, buzz when a break ends, hide the warning, test break, breaks taken today.
 - Linux: pixel-art look in the manner of Doom and Wolfenstein 3D: pixel-framed break screen with a progress bar, pixel-font warning, eye icon, pixel menu and settings.
